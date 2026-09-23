@@ -49,6 +49,7 @@ akcí na statistiky služebníků, Projevy hrůzy, Finále, remízy a odstraněn
 - živý feed akcí synchronizovaný mezi hráči v místnosti;
 - synchronizace dat v rámci místnosti Owlbear Rodeo.
 - přebírání světlého/tmavého motivu Owlbear Rodeo včetně jeho změn za běhu.
+- přepínání mezi českou a anglickou verzí; volba jazyka se uloží v prohlížeči.
 
 ## Stav vývoje
 

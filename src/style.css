@@ -2,7 +2,9 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 #app { width: min(100%, 640px); margin: auto; padding: 14px; }
-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+header { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.header-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: flex-start; gap: 8px; }
+#toggle-language { color: var(--color-background); background: var(--color-text-secondary); border: 0; }
 h1, h2, h3 { margin: 0 0 10px; }
 h1 { font-size: 1.2rem; }
 h2 { font-size: 1rem; color: var(--color-text); }
