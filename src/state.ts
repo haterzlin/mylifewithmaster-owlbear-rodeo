@@ -9,6 +9,8 @@ export type Servant = {
   moreHuman: string;
   lessHuman: string;
   acquaintances: { acquaintanceId: string; love: number }[];
+  captured?: boolean;
+  horrorPending?: boolean;
 };
 
 export type Acquaintance = { id: string; name: string; description: string };
@@ -18,9 +20,11 @@ export type GameState = {
   environment: string;
   servants: Servant[];
   acquaintances: Acquaintance[];
+  finaleServantId?: string;
 };
 
 export type ActionKind = "command" | "violence" | "villainy" | "approach";
+export type BonusKind = "none" | "intimacy" | "despair" | "honesty";
 
 export type DiceRoll = { dice: number; rolls: number[]; total: number };
 
@@ -77,6 +81,17 @@ export function updateAcquaintance(state: GameState, acquaintance: Acquaintance)
   };
 }
 
+export function removeAcquaintance(state: GameState, acquaintanceId: string): GameState {
+  return {
+    ...structuredClone(state),
+    acquaintances: state.acquaintances.filter((item) => item.id !== acquaintanceId),
+    servants: state.servants.map((servant) => ({
+      ...servant,
+      acquaintances: servant.acquaintances.filter((link) => link.acquaintanceId !== acquaintanceId),
+    })),
+  };
+}
+
 export function rollDice(dice: number, sides = 4, random = Math.random): DiceRoll {
   const rolls = Array.from({ length: Math.max(1, dice) }, () => Math.floor(random() * sides) + 1);
   return { dice: Math.max(1, dice), rolls, total: rolls.reduce((sum, roll) => sum + (sides === 4 && roll === 4 ? 0 : roll), 0) };
@@ -86,22 +101,41 @@ export function poolSize(value: number) {
   return Math.max(1, Math.floor(value));
 }
 
-export function applyActionOutcome(state: GameState, servantId: string, kind: ActionKind, acquaintanceId: string, won: boolean): GameState {
+export function applyActionOutcome(state: GameState, servantId: string, kind: ActionKind, acquaintanceId: string, won: boolean, horror = false, helperId?: string, tied = false): GameState {
   if (kind === "command") return structuredClone(state);
-  return {
+  if (tied) return structuredClone(state);
+  const result = {
     ...structuredClone(state),
     servants: state.servants.map((servant) => {
       if (servant.id !== servantId) return servant;
       if (kind === "approach") return {
         ...servant,
-        selfHatred: servant.selfHatred + (won ? 0 : 1),
+        selfHatred: servant.selfHatred + (won || horror ? 0 : 1),
+        horrorPending: horror || servant.horrorPending,
         acquaintances: servant.acquaintances.map((link) => link.acquaintanceId === acquaintanceId ? { ...link, love: link.love + 1 } : link),
       };
       return {
         ...servant,
-        selfHatred: servant.selfHatred + (won ? 1 : 0),
+        selfHatred: servant.selfHatred + (won && !horror ? 1 : 0),
+        horrorPending: horror || servant.horrorPending,
         fatigue: servant.fatigue + (!won && kind === "violence" ? 1 : 0),
       };
     }),
+  };
+  if (helperId && !won) {
+    result.servants = result.servants.map((servant) => servant.id === helperId
+      ? { ...servant, selfHatred: servant.selfHatred + (kind === "violence" ? 0 : 1), fatigue: servant.fatigue + (kind === "violence" ? 1 : 0) }
+      : servant);
+  }
+  return result;
+}
+
+export function applyFinaleOutcome(state: GameState, servantId: string, won: boolean, tied = false, helperIds: string[] = []): GameState {
+  return {
+    ...structuredClone(state),
+    servants: state.servants.map((servant) => !won && !tied && (servant.id === servantId || helperIds.includes(servant.id))
+      ? { ...servant, fatigue: servant.fatigue + 1 }
+      : servant),
+    finaleServantId: won ? undefined : state.finaleServantId,
   };
 }

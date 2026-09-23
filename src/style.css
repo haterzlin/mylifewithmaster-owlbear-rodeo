@@ -31,8 +31,9 @@ button:active { transform: translateY(1px); }
 details summary { cursor: pointer; }
 .acquaintance-actions { border-top: 1px solid #40334b; padding-top: 6px; margin-top: 10px; }
 .acquaintance-actions button { margin: 4px 4px 4px 0; }
+.acquaintance-edit-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .action-box { margin-top: 0; }
 .action-box select, .action-box button { margin: 4px 4px 4px 0; width: calc(50% - 8px); }
 .action-box button { width: auto; }
-.feed p { margin: 6px 0; color: #d6cbdc; }
+.feed p { margin: 6px 0; color: #d6cbdc; white-space: pre-line; }
 @media (max-width: 360px) { .grid { grid-template-columns: 1fr; } #app { padding: 10px; } }

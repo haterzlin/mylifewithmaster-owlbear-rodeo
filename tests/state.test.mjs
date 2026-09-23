@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   addAcquaintance,
+  applyFinaleOutcome,
   applyActionOutcome,
   attachAcquaintance,
   canEditMaster,
@@ -9,6 +10,7 @@ import {
   emptyState,
   normalizeState,
   poolSize,
+  removeAcquaintance,
   rollDice,
   updateAcquaintance,
 } from "../src/state.ts";
@@ -62,6 +64,16 @@ test("úprava známosti změní sdílený záznam", () => {
   assert.deepEqual(result.acquaintances[0], { id: "acq-1", name: "Starý mlynář", description: "Nový popis" });
 });
 
+test("odstranění známosti smaže záznam i vazby všech služebníků", () => {
+  const state = { ...emptyState, acquaintances: [{ id: "acq-1", name: "Mlynář", description: "" }], servants: [
+    { ...servant, acquaintances: [{ acquaintanceId: "acq-1", love: 2 }] },
+    { ...servant, id: "servant-2", acquaintances: [{ acquaintanceId: "acq-1", love: 1 }] },
+  ] };
+  const result = removeAcquaintance(state, "acq-1");
+  assert.deepEqual(result.acquaintances, []);
+  assert.deepEqual(result.servants.map((item) => item.acquaintances), [[], []]);
+});
+
 test("hod k4 ignoruje čtyřky a nikdy nevytvoří prázdnou hromádku", () => {
   const result = rollDice(3, 4, () => 0.99);
   assert.deepEqual(result.rolls, [4, 4, 4]);
@@ -81,4 +93,25 @@ test("sblížení vždy zvýší Lásku a při neúspěchu i Sebenenávist", () 
   const result = applyActionOutcome(state, servant.id, "approach", "acq-1", false);
   assert.equal(result.servants[0].acquaintances[0].love, 1);
   assert.equal(result.servants[0].selfHatred, servant.selfHatred + 1);
+});
+
+test("Projev hrůzy zabrání zvýšení Sebenenávisti a označí další scénu", () => {
+  const state = { ...emptyState, servants: [{ ...servant, selfHatred: 3 }] };
+  const result = applyActionOutcome(state, servant.id, "villainy", "npc", true, true);
+  assert.equal(result.servants[0].selfHatred, 3);
+  assert.equal(result.servants[0].horrorPending, true);
+});
+
+test("neúspěšné Finále zvýší Únavu, úspěšné ho ukončí", () => {
+  const helper = { ...servant, id: "helper-1", fatigue: 2 };
+  const state = { ...emptyState, finaleServantId: servant.id, servants: [{ ...servant, fatigue: 1 }, helper] };
+  assert.equal(applyFinaleOutcome(state, servant.id, false, false, [helper.id]).servants[0].fatigue, 2);
+  assert.equal(applyFinaleOutcome(state, servant.id, false, false, [helper.id]).servants[1].fatigue, 3);
+  assert.equal(applyFinaleOutcome(state, servant.id, true).finaleServantId, undefined);
+});
+
+test("remíza nepřidá následky akce", () => {
+  const state = { ...emptyState, servants: [{ ...servant, fatigue: 2 }] };
+  const result = applyActionOutcome(state, servant.id, "violence", "npc", false, false, undefined, true);
+  assert.deepEqual(result, state);
 });
