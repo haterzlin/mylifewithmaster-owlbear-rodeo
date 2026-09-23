@@ -1,0 +1,33 @@
+:root { color: #f5f0e8; background: #17131d; font: 15px/1.4 system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+#app { width: min(100%, 640px); margin: auto; padding: 14px; }
+header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+h1, h2, h3 { margin: 0 0 10px; }
+h1 { font-size: 1.2rem; }
+h2 { font-size: 1rem; color: #f2c879; }
+h3 { font-size: 1rem; }
+.card, .servant { background: #241e2d; border: 1px solid #40334b; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+.servant { background: #1e1927; }
+label { display: block; margin: 9px 0; color: #d6cbdc; }
+input, textarea { display: block; width: 100%; margin-top: 4px; padding: 8px; border: 1px solid #5e4a68; border-radius: 6px; color: inherit; background: #17131d; font: inherit; }
+select { width: 100%; padding: 8px; border: 1px solid #5e4a68; border-radius: 6px; color: inherit; background: #17131d; font: inherit; }
+textarea { resize: vertical; }
+input[type=number] { min-width: 0; }
+button { border: 0; border-radius: 6px; padding: 8px 12px; color: #201a2b; background: #f2c879; font-weight: 700; cursor: pointer; }
+button:active { transform: translateY(1px); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.section-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.character-list { display: grid; gap: 8px; }
+.character { display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; color: #f5f0e8; background: #1e1927; border: 1px solid #40334b; }
+.character span { color: #d6cbdc; }
+.muted, small { color: #a99caf; }
+.readonly { opacity: .9; }
+.acquaintances { width: 100%; border-collapse: collapse; margin: 6px 0 12px; }
+.acquaintances th, .acquaintances td { text-align: left; padding: 7px 4px; border-bottom: 1px solid #40334b; vertical-align: top; }
+.acquaintances th:last-child, .acquaintances td:last-child { width: 90px; }
+.acquaintances input.love { margin: 0; padding: 6px; }
+details summary { cursor: pointer; }
+.acquaintance-actions { border-top: 1px solid #40334b; padding-top: 6px; margin-top: 10px; }
+.acquaintance-actions button { margin: 4px 4px 4px 0; }
+@media (max-width: 360px) { .grid { grid-template-columns: 1fr; } #app { padding: 10px; } }
