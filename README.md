@@ -30,7 +30,8 @@ npm test
 ```
 
 Automatické testy ověřují normalizaci dat, oprávnění hráčů a Vypravěče,
-vytváření a připojování známostí a úpravu sdílených známostí.
+vytváření a připojování známostí, úpravu sdílených známostí, hody k4 a následky
+akcí na statistiky služebníků. Aktuálně je k dispozici 8 testů.
 
 ## Funkce
 
@@ -39,6 +40,9 @@ vytváření a připojování známostí a úpravu sdílených známostí.
 - sdílené známosti s individuální hodnotou Lásky pro každého služebníka;
 - oprávnění Vypravěče a hráčů;
 - samostatné panely pro služebníky a známosti;
+- základní herní akce s hody k4: Pánův příkaz, Násilí, Zlotřilost a Sbližování;
+- automatické změny Lásky, Sebenenávisti a Únavy po těchto hodech;
+- živý feed akcí synchronizovaný mezi hráči v místnosti;
 - synchronizace dat v rámci místnosti Owlbear Rodeo.
 
 ## Stav vývoje

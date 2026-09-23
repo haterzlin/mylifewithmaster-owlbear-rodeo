@@ -2,11 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   addAcquaintance,
+  applyActionOutcome,
   attachAcquaintance,
   canEditMaster,
   canEditServant,
   emptyState,
   normalizeState,
+  poolSize,
+  rollDice,
   updateAcquaintance,
 } from "../src/state.ts";
 
@@ -57,4 +60,25 @@ test("úprava známosti změní sdílený záznam", () => {
   const state = { ...emptyState, acquaintances: [{ id: "acq-1", name: "Mlynář", description: "Původní popis" }] };
   const result = updateAcquaintance(state, { id: "acq-1", name: "Starý mlynář", description: "Nový popis" });
   assert.deepEqual(result.acquaintances[0], { id: "acq-1", name: "Starý mlynář", description: "Nový popis" });
+});
+
+test("hod k4 ignoruje čtyřky a nikdy nevytvoří prázdnou hromádku", () => {
+  const result = rollDice(3, 4, () => 0.99);
+  assert.deepEqual(result.rolls, [4, 4, 4]);
+  assert.equal(result.total, 0);
+  assert.equal(poolSize(-3), 1);
+});
+
+test("neúspěšné násilí zvýší Únavu o jedna", () => {
+  const state = { ...emptyState, servants: [{ ...servant, fatigue: 2 }] };
+  const result = applyActionOutcome(state, servant.id, "violence", "npc", false);
+  assert.equal(result.servants[0].fatigue, 3);
+  assert.equal(result.servants[0].selfHatred, servant.selfHatred);
+});
+
+test("sblížení vždy zvýší Lásku a při neúspěchu i Sebenenávist", () => {
+  const state = { ...emptyState, servants: [{ ...servant, acquaintances: [{ acquaintanceId: "acq-1", love: 0 }] }] };
+  const result = applyActionOutcome(state, servant.id, "approach", "acq-1", false);
+  assert.equal(result.servants[0].acquaintances[0].love, 1);
+  assert.equal(result.servants[0].selfHatred, servant.selfHatred + 1);
 });
