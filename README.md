@@ -48,6 +48,7 @@ akcí na statistiky služebníků, Projevy hrůzy, Finále, remízy a odstraněn
 - automatické změny Lásky, Sebenenávisti a Únavy po hodech;
 - živý feed akcí synchronizovaný mezi hráči v místnosti;
 - synchronizace dat v rámci místnosti Owlbear Rodeo.
+- přebírání světlého/tmavého motivu Owlbear Rodeo včetně jeho změn za běhu.
 
 ## Stav vývoje
 

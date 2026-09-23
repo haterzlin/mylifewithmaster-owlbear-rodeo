@@ -12,6 +12,18 @@ let playerId = "local";
 let feed: string[] = [];
 let view: { kind: "master" } | { kind: "servant"; id: string } | { kind: "acquaintances"; servantId: string; acquaintanceId: string | null } | { kind: "finale"; servantId: string } | null = null;
 
+function applyTheme(theme: Awaited<ReturnType<typeof OBR.theme.getTheme>>) {
+  const root = document.documentElement;
+  root.style.setProperty("--color-primary", theme.primary.main);
+  root.style.setProperty("--color-primary-contrast", theme.primary.contrastText);
+  root.style.setProperty("--color-background", theme.background.default);
+  root.style.setProperty("--color-paper", theme.background.paper);
+  root.style.setProperty("--color-text", theme.text.primary);
+  root.style.setProperty("--color-text-secondary", theme.text.secondary);
+  root.style.setProperty("--color-text-muted", theme.text.disabled);
+  root.style.setProperty("--color-border", theme.text.disabled);
+}
+
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]!);
 }
@@ -399,6 +411,8 @@ function bindEvents() {
 }
 
 async function start() {
+  applyTheme(await OBR.theme.getTheme());
+  OBR.theme.onChange(applyTheme);
   playerId = OBR.player.id;
   role = await OBR.player.getRole();
   const metadata = await OBR.room.getMetadata();
