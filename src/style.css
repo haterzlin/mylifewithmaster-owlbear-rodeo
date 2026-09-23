@@ -30,9 +30,6 @@ button:active { transform: translateY(1px); }
 .acquaintances th, .acquaintances td { text-align: left; padding: 7px 4px; border-bottom: 1px solid var(--color-border); vertical-align: top; }
 .acquaintances th:last-child, .acquaintances td:last-child { width: 90px; }
 .acquaintances input.love { margin: 0; padding: 6px; }
-details summary { cursor: pointer; }
-.acquaintance-actions { border-top: 1px solid var(--color-border); padding-top: 6px; margin-top: 10px; }
-.acquaintance-actions button { margin: 4px 4px 4px 0; }
 .acquaintance-edit-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .action-box { margin-top: 0; }
 .action-box select, .action-box button { margin: 4px 4px 4px 0; width: calc(50% - 8px); }

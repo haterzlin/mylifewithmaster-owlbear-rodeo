@@ -5,7 +5,6 @@ import {
   applyFinaleOutcome,
   applyActionOutcome,
   attachAcquaintance,
-  canEditMaster,
   canEditServant,
   emptyState,
   normalizeState,
@@ -33,12 +32,26 @@ test("normalizace doplní výchozí hodnoty a prázdné známosti", () => {
   assert.deepEqual(state.acquaintances, []);
 });
 
+test("normalizace odmítne poškozené typy a omezí čísla", () => {
+  const state = normalizeState({
+    master: { reason: Infinity, fear: "<script>" },
+    environment: 42,
+    servants: [null, { ...servant, selfHatred: 999999, acquaintances: "bad" }],
+    acquaintances: "bad",
+  });
+  assert.equal(state.master.reason, 0);
+  assert.equal(state.master.fear, 0);
+  assert.equal(state.environment, "");
+  assert.equal(state.servants.length, 1);
+  assert.equal(state.servants[0].selfHatred, 100);
+  assert.deepEqual(state.servants[0].acquaintances, []);
+  assert.deepEqual(state.acquaintances, []);
+});
+
 test("hráč upravuje jen vlastního služebníka, Vypravěč všechny", () => {
   assert.equal(canEditServant("PLAYER", "player-1", servant), true);
   assert.equal(canEditServant("PLAYER", "player-2", servant), false);
   assert.equal(canEditServant("GM", "player-2", servant), true);
-  assert.equal(canEditMaster("PLAYER"), false);
-  assert.equal(canEditMaster("GM"), true);
 });
 
 test("nová známost se uloží a připojí služebníkovi", () => {
@@ -79,6 +92,12 @@ test("hod k4 ignoruje čtyřky a nikdy nevytvoří prázdnou hromádku", () => {
   assert.deepEqual(result.rolls, [4, 4, 4]);
   assert.equal(result.total, 0);
   assert.equal(poolSize(-3), 1);
+});
+
+test("hod kostkami omezí neplatný nebo nebezpečně velký počet kostek", () => {
+  const result = rollDice(Infinity, 4, () => 0);
+  assert.equal(result.dice, 1);
+  assert.equal(result.total, 1);
 });
 
 test("neúspěšné násilí zvýší Únavu o jedna", () => {

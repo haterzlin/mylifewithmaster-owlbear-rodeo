@@ -39,8 +39,12 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]!);
 }
 
+function selectorValue(value: string) {
+  return CSS.escape(value);
+}
+
 function numberInput(label: string, name: string, value: number) {
-  return `<label>${label}<input name="${name}" type="number" min="0" value="${value}" /></label>`;
+  return `<label>${label}<input name="${name}" type="number" min="0" value="${escapeHtml(String(value))}" /></label>`;
 }
 
 function render() {
@@ -52,7 +56,7 @@ function render() {
     app.innerHTML = `${header}
       <section class="card"><div class="section-title"><h2>${t("Postavy", "Characters")}</h2>${own ? "" : `<button id="new-servant">${t("Vytvořit postavu", "Create character")}</button>`}</div>
         <div class="character-list"><button class="character" data-open-master><strong>${t("Pán", "Master")}</strong><span>${escapeHtml(state.master.name || t("Bezejmenný Pán", "Unnamed Master"))}</span></button>
-        ${state.servants.map((servant) => `<button class="character" data-open-servant="${servant.id}"><strong>${t("Služebník", "Servant")}</strong><span>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</span></button>`).join("") || `<p class=muted>${t("Zatím není vytvořen žádný služebník.", "No servant has been created yet.")}</p>`}</div>
+        ${state.servants.map((servant) => `<button class="character" data-open-servant="${escapeHtml(servant.id)}"><strong>${t("Služebník", "Servant")}</strong><span>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</span></button>`).join("") || `<p class=muted>${t("Zatím není vytvořen žádný služebník.", "No servant has been created yet.")}</p>`}</div>
       </section>${feedCard()}`;
     bindEvents();
     return;
@@ -77,7 +81,7 @@ function masterCard() {
 }
 
 function commandCard() {
-  return `<section class="card"><h2>${t("Pánův příkaz", "Master's command")}</h2><label>${t("Cíl", "Target")}<select id="command-target">${state.servants.length ? state.servants.map((servant) => `<option value="${servant.id}">${escapeHtml(servant.name || t("Služebník bez jména", "Unnamed servant"))}</option>`).join("") : `<option disabled selected>${t("Nejdříve vytvoř služebníka", "Create a servant first")}</option>`}</select></label><label>${t("Bonus Pána", "Master bonus")}<select id="command-master-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option></select></label><label>${t("Bonus služebníka", "Servant bonus")}<select id="command-servant-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</option></select></label><button id="run-command" ${state.servants.length ? "" : "disabled"}>${t("Hodit", "Roll")}</button>${state.finaleServantId ? `<button data-open-finale="${state.finaleServantId}">${t("Otevřít Finále", "Open Finale")}</button>` : ""}</section>`;
+  return `<section class="card"><h2>${t("Pánův příkaz", "Master's command")}</h2><label>${t("Cíl", "Target")}<select id="command-target">${state.servants.length ? state.servants.map((servant) => `<option value="${escapeHtml(servant.id)}">${escapeHtml(servant.name || t("Služebník bez jména", "Unnamed servant"))}</option>`).join("") : `<option disabled selected>${t("Nejdříve vytvoř služebníka", "Create a servant first")}</option>`}</select></label><label>${t("Bonus Pána", "Master bonus")}<select id="command-master-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option></select></label><label>${t("Bonus služebníka", "Servant bonus")}<select id="command-servant-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</option></select></label><button id="run-command" ${state.servants.length ? "" : "disabled"}>${t("Hodit", "Roll")}</button>${state.finaleServantId ? `<button data-open-finale="${escapeHtml(state.finaleServantId)}">${t("Otevřít Finále", "Open Finale")}</button>` : ""}</section>`;
 }
 
 function feedCard() {
@@ -100,25 +104,25 @@ function servantCard(servant: Servant) {
       const acquaintance = acquaintances.find((item) => item.id === link.acquaintanceId);
       if (!acquaintance) return "";
       const title = escapeHtml(acquaintance.description || "Bez popisu");
-      const name = `<button class="link-button" title="${title}" data-open-acquaintance="${servant.id}:${acquaintance.id}">${escapeHtml(acquaintance.name)}</button>`;
-      return `<tr><td>${name}</td><td><input class="love" type="number" min="0" value="${link.love}" data-love="${servant.id}" data-acquaintance="${acquaintance.id}" ${editable ? "" : "disabled"} /></td></tr>`;
+      const name = `<button class="link-button" title="${title}" data-open-acquaintance="${escapeHtml(`${servant.id}:${acquaintance.id}`)}">${escapeHtml(acquaintance.name)}</button>`;
+      return `<tr><td>${name}</td><td><input class="love" type="number" min="0" value="${escapeHtml(String(link.love))}" data-love="${escapeHtml(servant.id)}" data-acquaintance="${escapeHtml(acquaintance.id)}" ${editable ? "" : "disabled"} /></td></tr>`;
     }).join("")}</tbody></table>` : `<p class=muted>${t("Zatím nemá žádnou Známost.", "No acquaintances yet.")}</p>`}
-    ${editable ? `<button data-open-acquaintances="${servant.id}">${t("Nová známost", "New acquaintance")}</button>` : ""}
-    ${editable ? `<label>${t("Jméno", "Name")}<input name="name" value="${escapeHtml(servant.name)}" /></label><button data-save-servant="${servant.id}">${t("Uložit služebníka", "Save servant")}</button>` : `<small class="muted">${t("Postava jiného hráče", "Another player's character")}</small>`}
+    ${editable ? `<button data-open-acquaintances="${escapeHtml(servant.id)}">${t("Nová známost", "New acquaintance")}</button>` : ""}
+    ${editable ? `<label>${t("Jméno", "Name")}<input name="name" value="${escapeHtml(servant.name)}" /></label><button data-save-servant="${escapeHtml(servant.id)}">${t("Uložit služebníka", "Save servant")}</button>` : `<small class="muted">${t("Postava jiného hráče", "Another player's character")}</small>`}
   </article>${editable ? actionCard(servant) : ""}`;
 }
 
 function actionCard(servant: Servant) {
-  const targets = state.servants.filter((item) => item.id !== servant.id).map((item) => `<option value="servant:${item.id}">${escapeHtml(item.name || t("Bezejmenný služebník", "Unnamed servant"))}</option>`).join("");
-  const acquaintances = servant.acquaintances.map((link) => state.acquaintances.find((item) => item.id === link.acquaintanceId)).filter(Boolean).map((item) => `<option value="acquaintance:${item!.id}">${escapeHtml(item!.name)}</option>`).join("");
-  const helpers = state.servants.filter((item) => item.id !== servant.id).map((item) => `<option value="${item.id}">${escapeHtml(item.name || t("Bezejmenný služebník", "Unnamed servant"))}</option>`).join("");
-  return `<section class="card action-box"><h2>${t("Herní akce", "Game actions")}</h2><select data-action-kind="${servant.id}"><option value="violence">${t("Násilí", "Violence")}</option><option value="villainy">${t("Zlotřilost", "Villainy")}</option><option value="approach">${t("Sbližování", "Approach")}</option></select><select data-action-target="${servant.id}"><option value="npc">${t("Vesničané / cizinci", "Villagers / strangers")}</option>${targets}${acquaintances}</select><select data-action-bonus="${servant.id}"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</option></select><select data-action-helper="${servant.id}"><option value="">${t("Bez pomoci", "No help")}</option>${helpers}</select><button data-run-action="${servant.id}">${t("Hodit", "Roll")}</button>${servant.captured ? `<button data-escape="${servant.id}">${t("Vymanění ze zajetí", "Escape captivity")}</button>` : ""}${servant.horrorPending ? `<button data-clear-horror="${servant.id}">${t("Dokončit Projev hrůzy", "Complete horror manifestation")}</button>` : ""}</section>`;
+  const targets = state.servants.filter((item) => item.id !== servant.id).map((item) => `<option value="servant:${escapeHtml(item.id)}">${escapeHtml(item.name || t("Bezejmenný služebník", "Unnamed servant"))}</option>`).join("");
+  const acquaintances = servant.acquaintances.map((link) => state.acquaintances.find((item) => item.id === link.acquaintanceId)).filter(Boolean).map((item) => `<option value="acquaintance:${escapeHtml(item!.id)}">${escapeHtml(item!.name)}</option>`).join("");
+  const helpers = state.servants.filter((item) => item.id !== servant.id).map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name || t("Bezejmenný služebník", "Unnamed servant"))}</option>`).join("");
+  return `<section class="card action-box"><h2>${t("Herní akce", "Game actions")}</h2><select data-action-kind="${escapeHtml(servant.id)}"><option value="violence">${t("Násilí", "Violence")}</option><option value="villainy">${t("Zlotřilost", "Villainy")}</option><option value="approach">${t("Sbližování", "Approach")}</option></select><select data-action-target="${escapeHtml(servant.id)}"><option value="npc">${t("Vesničané / cizinci", "Villagers / strangers")}</option>${targets}${acquaintances}</select><select data-action-bonus="${escapeHtml(servant.id)}"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</option></select><select data-action-helper="${escapeHtml(servant.id)}"><option value="">${t("Bez pomoci", "No help")}</option>${helpers}</select><button data-run-action="${escapeHtml(servant.id)}">${t("Hodit", "Roll")}</button>${servant.captured ? `<button data-escape="${escapeHtml(servant.id)}">${t("Vymanění ze zajetí", "Escape captivity")}</button>` : ""}${servant.horrorPending ? `<button data-clear-horror="${escapeHtml(servant.id)}">${t("Dokončit Projev hrůzy", "Complete horror manifestation")}</button>` : ""}</section>`;
 }
 
 function finaleCard(servantId: string) {
   const servant = state.servants.find((item) => item.id === servantId)!;
-  const helpers = state.servants.filter((item) => item.id !== servantId).map((item) => `<label class="check"><input type="checkbox" data-finale-helper="${item.id}" /> ${escapeHtml(item.name || t("Bezejmenný služebník", "Unnamed servant"))} — ${t("Láska", "Love")} ${totalLove(item)} − ${t("Únava", "Fatigue")} ${item.fatigue}</label>`).join("");
-  return `<section class="card finale"><h2>${t("Finále", "Finale")}</h2><p><strong>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</strong> ${t("se střetává s Pánem.", "faces the Master.")}</p><h3>${t("Pomocníci", "Helpers")}</h3>${helpers || `<p class="muted">${t("Nejsou k dispozici další služebníci.", "No other servants are available.")}</p>`}<label>${t("Bonus Pána", "Master bonus")}<select id="finale-master-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option></select></label><label>${t("Bonus služebníka", "Servant bonus")}<select id="finale-servant-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</option></select></label><button data-run-finale="${servantId}">${t("Hodit Finále", "Roll Finale")}</button></section>`;
+  const helpers = state.servants.filter((item) => item.id !== servantId).map((item) => `<label class="check"><input type="checkbox" data-finale-helper="${escapeHtml(item.id)}" /> ${escapeHtml(item.name || t("Bezejmenný služebník", "Unnamed servant"))} — ${t("Láska", "Love")} ${totalLove(item)} − ${t("Únava", "Fatigue")} ${item.fatigue}</label>`).join("");
+  return `<section class="card finale"><h2>${t("Finále", "Finale")}</h2><p><strong>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</strong> ${t("se střetává s Pánem.", "faces the Master.")}</p><h3>${t("Pomocníci", "Helpers")}</h3>${helpers || `<p class="muted">${t("Nejsou k dispozici další služebníci.", "No other servants are available.")}</p>`}<label>${t("Bonus Pána", "Master bonus")}<select id="finale-master-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option></select></label><label>${t("Bonus služebníka", "Servant bonus")}<select id="finale-servant-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</option></select></label><button data-run-finale="${escapeHtml(servantId)}">${t("Hodit Finále", "Roll Finale")}</button></section>`;
 }
 
 function acquaintanceCard(servantId: string) {
@@ -129,12 +133,17 @@ function acquaintanceCard(servantId: string) {
   const available = state.acquaintances.filter((item) => !linkedIds.has(item.id));
   return `<section class="card">
     <h2>${acquaintance ? t("Upravit známost", "Edit acquaintance") : t("Nová známost", "New acquaintance")}</h2>
-    ${acquaintance ? `<label>${t("Jméno", "Name")}<input data-edit-acquaintance-name="${acquaintance.id}" value="${escapeHtml(acquaintance.name)}" ${role === "GM" ? "" : "disabled"} /></label><label>${t("Popis", "Description")}<textarea data-edit-acquaintance-description="${acquaintance.id}" rows="6" ${role === "GM" ? "" : "disabled"}>${escapeHtml(acquaintance.description)}</textarea></label>${role === "GM" ? `<div class="acquaintance-edit-actions"><button data-save-acquaintance="${acquaintance.id}">${t("Uložit známost", "Save acquaintance")}</button><button data-delete-acquaintance="${acquaintance.id}">${t("Odstranit známost", "Delete acquaintance")}</button></div>` : ""}` : `<h3>${t("Připojit existující známost", "Attach existing acquaintance")}</h3>${available.length ? `<select data-add-acquaintance="${servantId}">${available.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("")}</select><button data-attach-acquaintance="${servantId}">${t("Připojit existující známost", "Attach acquaintance")}</button>` : ""}<h3>${t("Nová známost", "New acquaintance")}</h3><input data-new-acquaintance-name="${servantId}" placeholder="${t("Jméno známosti", "Acquaintance name")}" /><textarea data-new-acquaintance-description="${servantId}" rows="4" placeholder="${t("Popis známosti", "Acquaintance description")}"></textarea><button data-create-acquaintance="${servantId}">${t("Vytvořit známost", "Create acquaintance")}</button>`}
+    ${acquaintance ? `<label>${t("Jméno", "Name")}<input data-edit-acquaintance-name="${escapeHtml(acquaintance.id)}" value="${escapeHtml(acquaintance.name)}" ${role === "GM" ? "" : "disabled"} /></label><label>${t("Popis", "Description")}<textarea data-edit-acquaintance-description="${escapeHtml(acquaintance.id)}" rows="6" ${role === "GM" ? "" : "disabled"}>${escapeHtml(acquaintance.description)}</textarea></label>${role === "GM" ? `<div class="acquaintance-edit-actions"><button data-save-acquaintance="${escapeHtml(acquaintance.id)}">${t("Uložit známost", "Save acquaintance")}</button><button data-delete-acquaintance="${escapeHtml(acquaintance.id)}">${t("Odstranit známost", "Delete acquaintance")}</button></div>` : ""}` : `<h3>${t("Připojit existující známost", "Attach existing acquaintance")}</h3>${available.length ? `<select data-add-acquaintance="${escapeHtml(servantId)}">${available.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join("")}</select><button data-attach-acquaintance="${escapeHtml(servantId)}">${t("Připojit existující známost", "Attach acquaintance")}</button>` : ""}<h3>${t("Nová známost", "New acquaintance")}</h3><input data-new-acquaintance-name="${escapeHtml(servantId)}" placeholder="${t("Jméno známosti", "Acquaintance name")}" /><textarea data-new-acquaintance-description="${escapeHtml(servantId)}" rows="4" placeholder="${t("Popis známosti", "Acquaintance description")}"></textarea><button data-create-acquaintance="${escapeHtml(servantId)}">${t("Vytvořit známost", "Create acquaintance")}</button>`}
   </section>`;
 }
 
 function formValue(selector: string) {
   return (document.querySelector<HTMLInputElement | HTMLTextAreaElement>(selector)?.value ?? "").trim();
+}
+
+function inputNumber(value: string) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(100, parsed)) : 0;
 }
 
 async function updateState(update: (current: GameState) => GameState) {
@@ -153,7 +162,7 @@ async function publish(build: () => string) {
   language = "en";
   const en = build();
   language = originalLanguage;
-  const entry = { cs, en };
+  const entry = { cs: cs.slice(0, 2_000), en: en.slice(0, 2_000) };
   feed = [entry, ...feed].slice(0, 20);
   render();
   await OBR.broadcast.sendMessage(KEY, JSON.stringify(entry), { destination: "REMOTE" });
@@ -167,10 +176,6 @@ function bonusSides(bonus: BonusKind) {
   return bonus === "intimacy" ? 4 : bonus === "despair" ? 6 : bonus === "honesty" ? 8 : 0;
 }
 
-function bonusLabel(bonus: BonusKind) {
-  return bonus === "intimacy" ? t("Intimita", "Intimacy") : bonus === "despair" ? t("Zoufalství", "Despair") : bonus === "honesty" ? t("Upřímnost", "Honesty") : "";
-}
-
 function rollPool(pool: number, bonus: BonusKind) {
   const result = rollDice(pool);
   const sides = bonusSides(bonus);
@@ -179,7 +184,7 @@ function rollPool(pool: number, bonus: BonusKind) {
 }
 
 function rollLine(prefix: string, expression: string, values: string, roll: ReturnType<typeof rollPool>, bonus: BonusKind) {
-  const bonusText = bonusSides(bonus) ? ` + ${bonusLabel(bonus)}` : "";
+  const bonusText = bonus === "intimacy" ? ` + ${t("Intimita", "Intimacy")}` : bonus === "despair" ? ` + ${t("Zoufalství", "Despair")}` : bonus === "honesty" ? ` + ${t("Upřímnost", "Honesty")}` : "";
   const diceText = `${roll.dice}${die(4)}${bonusSides(bonus) ? " + " + die(bonusSides(bonus)) : ""}`;
   const rollsText = `${roll.rolls.map((value) => value === 4 ? "4̶" : value).join(", ")}${roll.bonusRoll ? ` + ${roll.bonusRoll}` : ""}`;
   return `${prefix} (${expression})${bonusText} -> (${values}) = ${diceText} -> ${t("padlo", "rolled")} ${rollsText} -> ${roll.total}`;
@@ -188,10 +193,15 @@ function rollLine(prefix: string, expression: string, values: string, roll: Retu
 async function runAction(servantId: string) {
   const servant = state.servants.find((item) => item.id === servantId);
   if (!servant || !canEditServant(role, playerId, servant)) return;
-  const kind = document.querySelector<HTMLSelectElement>(`[data-action-kind="${servantId}"]`)?.value as ActionKind;
-  const target = document.querySelector<HTMLSelectElement>(`[data-action-target="${servantId}"]`)?.value;
-  const bonus = (document.querySelector<HTMLSelectElement>(`[data-action-bonus="${servantId}"]`)?.value || "none") as BonusKind;
-  const helperId = document.querySelector<HTMLSelectElement>(`[data-action-helper="${servantId}"]`)?.value || undefined;
+  const safeServantId = selectorValue(servantId);
+  const kindValue = document.querySelector<HTMLSelectElement>(`[data-action-kind="${safeServantId}"]`)?.value;
+  if (kindValue !== "violence" && kindValue !== "villainy" && kindValue !== "approach") return;
+  const kind = kindValue as ActionKind;
+  const target = document.querySelector<HTMLSelectElement>(`[data-action-target="${safeServantId}"]`)?.value;
+  const bonusValue = document.querySelector<HTMLSelectElement>(`[data-action-bonus="${safeServantId}"]`)?.value || "none";
+  if (!["none", "intimacy", "despair", "honesty"].includes(bonusValue)) return;
+  const bonus = bonusValue as BonusKind;
+  const helperId = document.querySelector<HTMLSelectElement>(`[data-action-helper="${safeServantId}"]`)?.value || undefined;
   if (!target) return;
   if (kind === "approach" && !target.startsWith("acquaintance:")) {
     await publish(() => t("Sbližovat se lze jenom se Známostí.", "You can only approach an Acquaintance."));
@@ -274,8 +284,11 @@ async function runCommand() {
   const servantId = document.querySelector<HTMLSelectElement>("#command-target")?.value;
   const servant = state.servants.find((item) => item.id === servantId);
   if (!servant) return;
-  const masterBonus = (document.querySelector<HTMLSelectElement>("#command-master-bonus")?.value || "none") as BonusKind;
-  const servantBonus = (document.querySelector<HTMLSelectElement>("#command-servant-bonus")?.value || "none") as BonusKind;
+  const masterBonusValue = document.querySelector<HTMLSelectElement>("#command-master-bonus")?.value || "none";
+  const servantBonusValue = document.querySelector<HTMLSelectElement>("#command-servant-bonus")?.value || "none";
+  if (!["none", "intimacy", "despair"].includes(masterBonusValue) || !["none", "intimacy", "despair", "honesty"].includes(servantBonusValue)) return;
+  const masterBonus = masterBonusValue as BonusKind;
+  const servantBonus = servantBonusValue as BonusKind;
   const masterRoll = rollPool(poolSize(state.master.fear + servant.selfHatred), masterBonus);
   const servantRoll = rollPool(poolSize(totalLove(servant) - servant.fatigue), servantBonus);
   const tied = masterRoll.total === servantRoll.total;
@@ -308,8 +321,11 @@ async function runFinale(id: string) {
   if (state.finaleServantId !== id) return;
   const servant = state.servants.find((item) => item.id === id);
   if (!servant || !canEditServant(role, playerId, servant)) return;
-  const masterBonus = (document.querySelector<HTMLSelectElement>("#finale-master-bonus")?.value || "none") as BonusKind;
-  const servantBonus = (document.querySelector<HTMLSelectElement>("#finale-servant-bonus")?.value || "none") as BonusKind;
+  const masterBonusValue = document.querySelector<HTMLSelectElement>("#finale-master-bonus")?.value || "none";
+  const servantBonusValue = document.querySelector<HTMLSelectElement>("#finale-servant-bonus")?.value || "none";
+  if (!["none", "intimacy", "despair"].includes(masterBonusValue) || !["none", "intimacy", "despair", "honesty"].includes(servantBonusValue)) return;
+  const masterBonus = masterBonusValue as BonusKind;
+  const servantBonus = servantBonusValue as BonusKind;
   const helperIds = [...document.querySelectorAll<HTMLInputElement>("[data-finale-helper]:checked")].map((input) => input.dataset.finaleHelper!);
   const helpers = helperIds.map((helperId) => state.servants.find((item) => item.id === helperId)).filter(Boolean) as Servant[];
   const helperDice = helpers.reduce((sum, helper) => sum + poolSize(totalLove(helper) - helper.fatigue), 0);
@@ -329,20 +345,20 @@ async function saveMaster() {
   if (role !== "GM") return;
   await updateState((current) => ({ ...current, master: {
     name: formValue("#master-name"), description: formValue("#master-description"),
-    reason: Number(formValue('[name="master-reason"]')) || 0, fear: Number(formValue('[name="master-fear"]')) || 0,
+    reason: inputNumber(formValue('[name="master-reason"]')), fear: inputNumber(formValue('[name="master-fear"]')),
   }, environment: formValue("#environment") }));
 }
 
 async function saveServant(id: string) {
-  const card = document.querySelector<HTMLElement>(`[data-save-servant="${id}"]`)?.closest(".servant");
+  const card = document.querySelector<HTMLElement>(`[data-save-servant="${selectorValue(id)}"]`)?.closest(".servant");
   if (!card) return;
   const servant = state.servants.find((item) => item.id === id);
   if (!servant || !canEditServant(role, playerId, servant)) return;
-  const value = (name: string) => card.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`)?.value.trim() ?? "";
+  const value = (name: string) => card.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${selectorValue(name)}"]`)?.value.trim() ?? "";
   const next = {
     name: value("name"), moreHuman: value("moreHuman"), lessHuman: value("lessHuman"),
-    selfHatred: Number(value("selfHatred")) || 0, fatigue: Number(value("fatigue")) || 0,
-    acquaintances: servant.acquaintances.map((link) => ({ ...link, love: Number(card.querySelector<HTMLInputElement>(`[data-love="${id}"][data-acquaintance="${link.acquaintanceId}"]`)?.value) || 0 })),
+    selfHatred: inputNumber(value("selfHatred")), fatigue: inputNumber(value("fatigue")),
+    acquaintances: servant.acquaintances.map((link) => ({ ...link, love: inputNumber(card.querySelector<HTMLInputElement>(`[data-love="${selectorValue(id)}"][data-acquaintance="${selectorValue(link.acquaintanceId)}"]`)?.value ?? "") })),
   };
   await updateState((current) => ({ ...current,
     servants: current.servants.map((item) => item.id === id ? {
@@ -364,7 +380,7 @@ async function saveServant(id: string) {
 async function attachAcquaintance(servantId: string) {
   const servant = state.servants.find((item) => item.id === servantId);
   if (!servant || !canEditServant(role, playerId, servant)) return;
-  const id = document.querySelector<HTMLSelectElement>(`[data-add-acquaintance="${servantId}"]`)?.value;
+  const id = document.querySelector<HTMLSelectElement>(`[data-add-acquaintance="${selectorValue(servantId)}"]`)?.value;
   if (!id || servant.acquaintances.some((link) => link.acquaintanceId === id)) return;
   await updateState((current) => attachAcquaintanceState(current, servantId, id));
 }
@@ -372,8 +388,8 @@ async function attachAcquaintance(servantId: string) {
 async function createAcquaintance(servantId: string) {
   const servant = state.servants.find((item) => item.id === servantId);
   if (!servant || !canEditServant(role, playerId, servant)) return;
-  const name = formValue(`[data-new-acquaintance-name="${servantId}"]`);
-  const description = formValue(`[data-new-acquaintance-description="${servantId}"]`);
+  const name = formValue(`[data-new-acquaintance-name="${selectorValue(servantId)}"]`);
+  const description = formValue(`[data-new-acquaintance-description="${selectorValue(servantId)}"]`);
   if (!name) return;
   const acquaintance = { id: crypto.randomUUID(), name, description };
   await updateState((current) => addAcquaintance(current, servantId, acquaintance));
@@ -387,8 +403,8 @@ async function saveAcquaintance(id: string) {
   if (!current) return;
   await updateState((state) => updateAcquaintanceState(state, {
     ...current,
-    name: formValue(`[data-edit-acquaintance-name="${id}"]`) || current.name,
-    description: formValue(`[data-edit-acquaintance-description="${id}"]`),
+    name: formValue(`[data-edit-acquaintance-name="${selectorValue(id)}"]`) || current.name,
+    description: formValue(`[data-edit-acquaintance-description="${selectorValue(id)}"]`),
   }));
   if (view?.kind === "acquaintances") {
     view = { kind: "servant", id: view.servantId };
@@ -456,9 +472,10 @@ async function start() {
   OBR.player.onChange(async (player) => { playerId = player.id; role = await OBR.player.getRole(); render(); });
   OBR.broadcast.onMessage(KEY, (event) => {
     if (typeof event.data !== "string") return;
+    if (event.data.length > 10_000) return;
     try {
       const entry = JSON.parse(event.data) as FeedEntry;
-      if (typeof entry.cs === "string" && typeof entry.en === "string") feed = [entry, ...feed].slice(0, 20);
+      if (typeof entry.cs === "string" && typeof entry.en === "string" && entry.cs.length <= 2_000 && entry.en.length <= 2_000) feed = [entry, ...feed].slice(0, 20);
     } catch {
       // Ignore feed messages from older plugin versions.
     }

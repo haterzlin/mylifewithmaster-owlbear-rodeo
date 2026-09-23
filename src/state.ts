@@ -35,24 +35,73 @@ export const emptyState: GameState = {
   acquaintances: [],
 };
 
+const MAX_NUMBER = 100;
+
+function record(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function text(value: unknown, fallback = "") {
+  return typeof value === "string" ? value.slice(0, 10_000) : fallback;
+}
+
+function number(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.min(MAX_NUMBER, value)) : fallback;
+}
+
+function id(value: unknown, fallback: string) {
+  const result = text(value).trim();
+  return result.slice(0, 100) || fallback;
+}
+
 export function normalizeState(value: Partial<GameState> | undefined): GameState {
   const current = structuredClone(emptyState);
-  if (!value) return current;
+  const source = record(value);
+  const master = record(source.master);
+  const acquaintances = Array.isArray(source.acquaintances) ? source.acquaintances.filter((item) => Object.values(record(item)).length > 0).map((item, index) => {
+    const acquaintance = record(item);
+    return {
+      id: id(acquaintance.id, `acquaintance-${index}`),
+      name: text(acquaintance.name),
+      description: text(acquaintance.description),
+    };
+  }) : [];
+  const servants = Array.isArray(source.servants) ? source.servants.filter((item) => Object.values(record(item)).length > 0).map((item, index) => {
+    const servant = record(item);
+    const links = Array.isArray(servant.acquaintances) ? servant.acquaintances.filter((link) => Object.values(record(link)).length > 0).map((link) => {
+      const acquaintance = record(link);
+      return { acquaintanceId: id(acquaintance.acquaintanceId, ""), love: number(acquaintance.love) };
+    }).filter((link) => link.acquaintanceId) : [];
+    return {
+      id: id(servant.id, `servant-${index}`),
+      name: text(servant.name),
+      ownerId: id(servant.ownerId, "unknown"),
+      selfHatred: number(servant.selfHatred),
+      fatigue: number(servant.fatigue),
+      moreHuman: text(servant.moreHuman),
+      lessHuman: text(servant.lessHuman),
+      acquaintances: links,
+      captured: servant.captured === true,
+      horrorPending: servant.horrorPending === true,
+    };
+  }) : [];
   return {
     ...current,
-    ...value,
-    master: { ...current.master, ...value.master },
-    servants: (value.servants ?? []).map((servant) => ({ ...servant, acquaintances: servant.acquaintances ?? [] })),
-    acquaintances: value.acquaintances ?? [],
+    master: {
+      name: text(master.name),
+      description: text(master.description),
+      reason: number(master.reason),
+      fear: number(master.fear),
+    },
+    environment: text(source.environment),
+    servants,
+    acquaintances,
+    finaleServantId: typeof source.finaleServantId === "string" ? source.finaleServantId.slice(0, 100) : undefined,
   };
 }
 
 export function canEditServant(role: Role, playerId: string, servant: Servant) {
   return role === "GM" || servant.ownerId === playerId;
-}
-
-export function canEditMaster(role: Role) {
-  return role === "GM";
 }
 
 export function attachAcquaintance(state: GameState, servantId: string, acquaintanceId: string): GameState {
@@ -93,12 +142,14 @@ export function removeAcquaintance(state: GameState, acquaintanceId: string): Ga
 }
 
 export function rollDice(dice: number, sides = 4, random = Math.random): DiceRoll {
-  const rolls = Array.from({ length: Math.max(1, dice) }, () => Math.floor(random() * sides) + 1);
-  return { dice: Math.max(1, dice), rolls, total: rolls.reduce((sum, roll) => sum + (sides === 4 && roll === 4 ? 0 : roll), 0) };
+  const count = Math.max(1, Math.min(MAX_NUMBER, Math.floor(Number.isFinite(dice) ? dice : 1)));
+  const safeSides = Math.max(1, Math.min(MAX_NUMBER, Math.floor(Number.isFinite(sides) ? sides : 4)));
+  const rolls = Array.from({ length: count }, () => Math.floor(random() * safeSides) + 1);
+  return { dice: count, rolls, total: rolls.reduce((sum, roll) => sum + (safeSides === 4 && roll === 4 ? 0 : roll), 0) };
 }
 
 export function poolSize(value: number) {
-  return Math.max(1, Math.floor(value));
+  return Math.max(1, Math.min(MAX_NUMBER, Math.floor(Number.isFinite(value) ? value : 1)));
 }
 
 export function applyActionOutcome(state: GameState, servantId: string, kind: ActionKind, acquaintanceId: string, won: boolean, horror = false, helperId?: string, tied = false): GameState {
