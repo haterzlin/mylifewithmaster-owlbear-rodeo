@@ -1,40 +1,15 @@
 import OBR from "@owlbear-rodeo/sdk";
 import "./style.css";
+import { addAcquaintance, attachAcquaintance as attachAcquaintanceState, canEditServant, emptyState, normalizeState, updateAcquaintance as updateAcquaintanceState } from "./state";
+import type { GameState, Servant } from "./state";
 
 const KEY = "com.mujzivotspanem/state";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
-type Servant = {
-  id: string;
-  name: string;
-  ownerId: string;
-  selfHatred: number;
-  fatigue: number;
-  moreHuman: string;
-  lessHuman: string;
-  acquaintances: { acquaintanceId: string; love: number }[];
-};
-
-type Acquaintance = { id: string; name: string; description: string };
-
-type GameState = {
-  master: { name: string; description: string; reason: number; fear: number };
-  environment: string;
-  servants: Servant[];
-  acquaintances: Acquaintance[];
-};
-
-const emptyState: GameState = {
-  master: { name: "", description: "", reason: 0, fear: 0 },
-  environment: "",
-  servants: [],
-  acquaintances: [],
-};
-
 let state = structuredClone(emptyState);
 let role: "GM" | "PLAYER" = "PLAYER";
 let playerId = "local";
-let view: { kind: "master" } | { kind: "servant"; id: string } | { kind: "acquaintances"; servantId: string } | null = null;
+let view: { kind: "master" } | { kind: "servant"; id: string } | { kind: "acquaintances"; servantId: string; acquaintanceId: string | null } | null = null;
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]!);
@@ -91,26 +66,23 @@ function servantCard(servant: Servant) {
       const acquaintance = acquaintances.find((item) => item.id === link.acquaintanceId);
       if (!acquaintance) return "";
       const title = escapeHtml(acquaintance.description || "Bez popisu");
-      const name = `<span title="${title}">${escapeHtml(acquaintance.name)}</span>`;
+      const name = `<button class="link-button" title="${title}" data-open-acquaintance="${servant.id}:${acquaintance.id}">${escapeHtml(acquaintance.name)}</button>`;
       return `<tr><td>${name}</td><td><input class="love" type="number" min="0" value="${link.love}" data-love="${servant.id}" data-acquaintance="${acquaintance.id}" ${editable ? "" : "disabled"} /></td></tr>`;
     }).join("")}</tbody></table>` : "<p class=muted>Zatím nemá žádnou Známost.</p>"}
-    ${editable ? `<button data-open-acquaintances="${servant.id}">Spravovat známosti</button>` : ""}
+    ${editable ? `<button data-open-acquaintances="${servant.id}">Nová známost</button>` : ""}
     ${editable ? `<label>Jméno<input name="name" value="${escapeHtml(servant.name)}" /></label><button data-save-servant="${servant.id}">Uložit služebníka</button>` : `<small class="muted">Postava jiného hráče</small>`}
   </article>`;
 }
 
 function acquaintanceCard(servantId: string) {
+  const acquaintanceId = view?.kind === "acquaintances" ? view.acquaintanceId : null;
+  const acquaintance = acquaintanceId ? state.acquaintances.find((item) => item.id === acquaintanceId) : undefined;
   const servant = state.servants.find((item) => item.id === servantId)!;
   const linkedIds = new Set(servant.acquaintances.map((link) => link.acquaintanceId));
   const available = state.acquaintances.filter((item) => !linkedIds.has(item.id));
   return `<section class="card">
-    <h2>Známosti služebníka</h2>
-    ${available.length ? `<select data-add-acquaintance="${servantId}">${available.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("")}</select><button data-attach-acquaintance="${servantId}">Připojit existující známost</button>` : "<p class='muted'>Všechny dostupné známosti jsou připojené.</p>"}
-    <h3>Nová známost</h3>
-    <input data-new-acquaintance-name="${servantId}" placeholder="Jméno známosti" />
-    <textarea data-new-acquaintance-description="${servantId}" rows="4" placeholder="Popis známosti"></textarea>
-    <button data-create-acquaintance="${servantId}">Vytvořit známost</button>
-    ${role === "GM" ? `<h3>Úprava známostí</h3>${state.acquaintances.map((item) => `<details class="acquaintance-edit"><summary>${escapeHtml(item.name)}</summary><input data-acquaintance-name="${item.id}" value="${escapeHtml(item.name)}" /><textarea data-acquaintance-description="${item.id}" rows="3">${escapeHtml(item.description)}</textarea></details>`).join("")}<button data-save-acquaintances>Uložit známosti</button>` : ""}
+    <h2>${acquaintance ? "Upravit známost" : "Nová známost"}</h2>
+    ${acquaintance ? `<label>Jméno<input data-edit-acquaintance-name="${acquaintance.id}" value="${escapeHtml(acquaintance.name)}" ${role === "GM" ? "" : "disabled"} /></label><label>Popis<textarea data-edit-acquaintance-description="${acquaintance.id}" rows="6" ${role === "GM" ? "" : "disabled"}>${escapeHtml(acquaintance.description)}</textarea></label>${role === "GM" ? `<button data-save-acquaintance="${acquaintance.id}">Uložit známost</button>` : ""}` : `<h3>Připojit existující známost</h3>${available.length ? `<select data-add-acquaintance="${servantId}">${available.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("")}</select><button data-attach-acquaintance="${servantId}">Připojit existující známost</button>` : ""}<h3>Nová známost</h3><input data-new-acquaintance-name="${servantId}" placeholder="Jméno známosti" /><textarea data-new-acquaintance-description="${servantId}" rows="4" placeholder="Popis známosti"></textarea><button data-create-acquaintance="${servantId}">Vytvořit známost</button>`}
   </section>`;
 }
 
@@ -136,7 +108,7 @@ async function saveServant(id: string) {
   const card = document.querySelector<HTMLElement>(`[data-save-servant="${id}"]`)?.closest(".servant");
   if (!card) return;
   const servant = state.servants.find((item) => item.id === id);
-  if (!servant || (role !== "GM" && servant.ownerId !== playerId)) return;
+  if (!servant || !canEditServant(role, playerId, servant)) return;
   const value = (name: string) => card.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`)?.value.trim() ?? "";
   await updateState((current) => ({ ...current,
     servants: current.servants.map((item) => item.id === id ? {
@@ -148,33 +120,37 @@ async function saveServant(id: string) {
 
 async function attachAcquaintance(servantId: string) {
   const servant = state.servants.find((item) => item.id === servantId);
-  if (!servant || (role !== "GM" && servant.ownerId !== playerId)) return;
+  if (!servant || !canEditServant(role, playerId, servant)) return;
   const id = document.querySelector<HTMLSelectElement>(`[data-add-acquaintance="${servantId}"]`)?.value;
   if (!id || servant.acquaintances.some((link) => link.acquaintanceId === id)) return;
-  await updateState((current) => ({ ...current, servants: current.servants.map((item) => item.id === servantId ? { ...item, acquaintances: [...item.acquaintances, { acquaintanceId: id, love: 0 }] } : item) }));
+  await updateState((current) => attachAcquaintanceState(current, servantId, id));
 }
 
 async function createAcquaintance(servantId: string) {
   const servant = state.servants.find((item) => item.id === servantId);
-  if (!servant || (role !== "GM" && servant.ownerId !== playerId)) return;
+  if (!servant || !canEditServant(role, playerId, servant)) return;
   const name = formValue(`[data-new-acquaintance-name="${servantId}"]`);
   const description = formValue(`[data-new-acquaintance-description="${servantId}"]`);
   if (!name) return;
   const acquaintance = { id: crypto.randomUUID(), name, description };
-  await updateState((current) => ({
-    ...current,
-    acquaintances: [...current.acquaintances, acquaintance],
-    servants: current.servants.map((item) => item.id === servantId ? { ...item, acquaintances: [...item.acquaintances, { acquaintanceId: acquaintance.id, love: 0 }] } : item),
-  }));
+  await updateState((current) => addAcquaintance(current, servantId, acquaintance));
+  view = { kind: "servant", id: servantId };
+  render();
 }
 
-async function saveAcquaintances() {
+async function saveAcquaintance(id: string) {
   if (role !== "GM") return;
-  await updateState((current) => ({ ...current, acquaintances: current.acquaintances.map((item) => ({
-    ...item,
-    name: formValue(`[data-acquaintance-name="${item.id}"]`) || item.name,
-    description: formValue(`[data-acquaintance-description="${item.id}"]`),
-  })) }));
+  const current = state.acquaintances.find((item) => item.id === id);
+  if (!current) return;
+  await updateState((state) => updateAcquaintanceState(state, {
+    ...current,
+    name: formValue(`[data-edit-acquaintance-name="${id}"]`) || current.name,
+    description: formValue(`[data-edit-acquaintance-description="${id}"]`),
+  }));
+  if (view?.kind === "acquaintances") {
+    view = { kind: "servant", id: view.servantId };
+    render();
+  }
 }
 
 async function createServant() {
@@ -197,10 +173,11 @@ function bindEvents() {
     else void createServant();
   });
   document.querySelectorAll<HTMLElement>("[data-save-servant]").forEach((button) => button.addEventListener("click", () => void saveServant(button.dataset.saveServant!)));
-  document.querySelectorAll<HTMLElement>("[data-open-acquaintances]").forEach((button) => button.addEventListener("click", () => { view = { kind: "acquaintances", servantId: button.dataset.openAcquaintances! }; render(); }));
+  document.querySelectorAll<HTMLElement>("[data-open-acquaintances]").forEach((button) => button.addEventListener("click", () => { view = { kind: "acquaintances", servantId: button.dataset.openAcquaintances!, acquaintanceId: null }; render(); }));
+  document.querySelectorAll<HTMLElement>("[data-open-acquaintance]").forEach((button) => button.addEventListener("click", () => { const [servantId, acquaintanceId] = button.dataset.openAcquaintance!.split(":"); view = { kind: "acquaintances", servantId, acquaintanceId }; render(); }));
   document.querySelectorAll<HTMLElement>("[data-attach-acquaintance]").forEach((button) => button.addEventListener("click", () => void attachAcquaintance(button.dataset.attachAcquaintance!)));
   document.querySelectorAll<HTMLElement>("[data-create-acquaintance]").forEach((button) => button.addEventListener("click", () => void createAcquaintance(button.dataset.createAcquaintance!)));
-  document.querySelector("[data-save-acquaintances]")?.addEventListener("click", () => void saveAcquaintances());
+  document.querySelectorAll<HTMLElement>("[data-save-acquaintance]").forEach((button) => button.addEventListener("click", () => void saveAcquaintance(button.dataset.saveAcquaintance!)));
 }
 
 async function start() {
@@ -212,18 +189,6 @@ async function start() {
   render();
   OBR.room.onMetadataChange((metadata) => { state = normalizeState(metadata[KEY] as Partial<GameState> | undefined); render(); });
   OBR.player.onChange(async (player) => { playerId = player.id; role = await OBR.player.getRole(); render(); });
-}
-
-function normalizeState(value: Partial<GameState> | undefined): GameState {
-  const current = structuredClone(emptyState);
-  if (!value) return current;
-  return {
-    ...current,
-    ...value,
-    master: { ...current.master, ...value.master },
-    servants: (value.servants ?? []).map((servant) => ({ ...servant, acquaintances: servant.acquaintances ?? [] })),
-    acquaintances: value.acquaintances ?? [],
-  };
 }
 
 if (OBR.isAvailable) OBR.onReady(() => void start());
