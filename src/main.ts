@@ -315,7 +315,7 @@ async function runCommand() {
     await updateState((current) => ({ ...current, finaleServantId: servant.id }));
   }
   await publish(() => {
-    const consequence = tied ? t("Remíza, příkaz je přerušen", "Tie, the command is interrupted") : finale ? `${servant.name} ${t("se vzepřel Pánovi – začíná Finále", "defied the Master – Finale begins")}` : won ? `${servant.name} ${t("musí uposlechnout Pánův příkaz", "must obey the Master's command")}` : `${servant.name} ${t("se příkazu vzepřel", "defied the command")}`;
+    const consequence = tied ? t("Remíza, příkaz je přerušen", "Tie, the command is interrupted") : finale ? `${servant.name} ${t("se vzepřel Pánovi – začíná Finále", "defied the Master – Finale begins")}` : won ? `${servant.name} ${t("musí uposlechnout Pánův příkaz", "must obey the Master's command")}` : `${servant.name} ${t("se příkazu vzepřel", "defied the command")}${t(", Finále nezačalo, protože služebník má příliš nízkou Lásku", ", Finale did not start because the servant's Love is too low")}`;
     return `**${t("Pán přikazuje", "The Master commands")} ${servant.name}.**\n${rollLine(t("Pán hází", "Master rolls"), t("Strach + Sebenenávist", "Fear + Self-hatred"), `${state.master.fear} + ${servant.selfHatred}`, masterRoll, masterBonus)}\n${rollLine(`${servant.name} ${t("hází", "rolls")}`, t("Láska − Únava", "Love − Fatigue"), `${totalLove(servant)} - ${servant.fatigue}`, servantRoll, servantBonus)}\n${masterRoll.total} ${tied ? "=" : won ? ">" : "<"} ${servantRoll.total} -> **${consequence}.**`;
   });
 }
