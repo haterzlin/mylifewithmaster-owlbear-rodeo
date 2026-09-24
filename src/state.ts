@@ -152,6 +152,20 @@ export function poolSize(value: number) {
   return Math.max(1, Math.min(MAX_NUMBER, Math.floor(Number.isFinite(value) ? value : 1)));
 }
 
+export type EpilogueKind = "escape" | "killed" | "selfDestruct" | "joinVillagers" | "sourceOfFear" | "newMaster";
+
+export function epilogueOptions(servant: Servant, reason: number): EpilogueKind[] {
+  const love = servant.acquaintances.reduce((sum, link) => sum + link.love, 0);
+  const options: EpilogueKind[] = [];
+  if (servant.fatigue > reason + servant.selfHatred) options.push("escape");
+  if (servant.selfHatred + servant.fatigue > love + reason) options.push("killed");
+  if (servant.selfHatred > servant.fatigue + reason) options.push("selfDestruct");
+  if (love + reason > servant.selfHatred + servant.fatigue) options.push("joinVillagers");
+  if (love === 0) options.push("sourceOfFear");
+  if (servant.selfHatred + servant.fatigue === love + reason) options.push("newMaster");
+  return options;
+}
+
 export function applyActionOutcome(state: GameState, servantId: string, kind: ActionKind, acquaintanceId: string, won: boolean, horror = false, helperId?: string, tied = false): GameState {
   if (kind === "command") return structuredClone(state);
   if (tied) return structuredClone(state);
