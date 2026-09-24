@@ -5,6 +5,7 @@ author: Ľubomír Mlích
 image: https://lubomir.mlich.cz/lifewithmymaster/dist/icon-generated.png
 icon: https://lubomir.mlich.cz/lifewithmymaster/dist/icon-generated.png
 tags:
+  - automation
   - other
 manifest: https://lubomir.mlich.cz/lifewithmymaster/dist/manifest.json
 learn-more: https://github.com/haterzlin/mylifewithmaster-owlbear-rodeo
