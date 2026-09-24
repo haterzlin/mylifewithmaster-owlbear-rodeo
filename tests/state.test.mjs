@@ -7,6 +7,7 @@ import {
   attachAcquaintance,
   canEditServant,
   emptyState,
+  epilogueOptions,
   normalizeState,
   poolSize,
   removeAcquaintance,
@@ -127,6 +128,11 @@ test("neúspěšné Finále zvýší Únavu, úspěšné ho ukončí", () => {
   assert.equal(applyFinaleOutcome(state, servant.id, false, false, [helper.id]).servants[0].fatigue, 2);
   assert.equal(applyFinaleOutcome(state, servant.id, false, false, [helper.id]).servants[1].fatigue, 3);
   assert.equal(applyFinaleOutcome(state, servant.id, true).finaleServantId, undefined);
+});
+
+test("Epilog vrátí všechny platné možnosti podle konečných statistik", () => {
+  assert.deepEqual(epilogueOptions({ ...servant, selfHatred: 2, fatigue: 1, acquaintances: [{ acquaintanceId: "a", love: 4 }] }, 2), ["joinVillagers"]);
+  assert.deepEqual(epilogueOptions({ ...servant, selfHatred: 5, fatigue: 2, acquaintances: [] }, 2), ["killed", "selfDestruct", "sourceOfFear"]);
 });
 
 test("remíza nepřidá následky akce", () => {
