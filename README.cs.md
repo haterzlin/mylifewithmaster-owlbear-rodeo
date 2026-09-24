@@ -2,7 +2,7 @@
 
 [English](README.md) · Česká verze
 
-Lokální rozšíření pro [Owlbear Rodeo](https://www.owlbear.rodeo/) ke správě hry **Můj život s Pánem**.
+Veřejná beta verze rozšíření pro [Owlbear Rodeo](https://www.owlbear.rodeo/) ke správě hry **My Life with Master**.
 
 ## Spuštění
 
@@ -17,6 +17,12 @@ V Owlbear Rodeo přidej rozšíření pomocí manifestu:
 
 ```text
 http://localhost:5173/manifest.json
+```
+
+Produkční manifest:
+
+```text
+https://lubomir.mlich.cz/lifewithmymaster/dist/manifest.json
 ```
 
 Pro ověření produkčního sestavení:
@@ -55,4 +61,6 @@ akcí na statistiky služebníků, Projevy hrůzy, Finále, remízy a odstraněn
 
 ## Stav vývoje
 
-Projekt je zatím určen pouze pro lokální vývoj. Data se ukládají do metadat aktuální místnosti Owlbear Rodeo.
+Projekt je ve veřejné beta verzi. Data se ukládají do metadat aktuální
+místnosti Owlbear Rodeo. Rozšíření zatím není zařazené v oficiálním katalogu
+rozšíření Owlbear Rodeo.

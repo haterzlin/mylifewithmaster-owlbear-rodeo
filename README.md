@@ -2,7 +2,7 @@
 
 English version · [Česky](README.cs.md)
 
-Local [Owlbear Rodeo](https://www.owlbear.rodeo/) extension for managing a **My Life with Master** game.
+Public beta [Owlbear Rodeo](https://www.owlbear.rodeo/) extension for managing a **My Life with Master** game.
 
 ## Running
 
@@ -17,6 +17,12 @@ In Owlbear Rodeo, add the extension using the manifest:
 
 ```text
 http://localhost:5173/manifest.json
+```
+
+Production manifest:
+
+```text
+https://lubomir.mlich.cz/lifewithmymaster/dist/manifest.json
 ```
 
 To verify a production build:
@@ -57,4 +63,6 @@ Connections. There are currently 12 tests.
 ## Development status
 
 The project is currently intended for local development only. Data is stored in
-the metadata of the current Owlbear Rodeo room.
+the metadata of the current Owlbear Rodeo room. The public beta is hosted at
+the production manifest URL above; the extension is not yet listed in the
+official Owlbear Rodeo extension catalog.
