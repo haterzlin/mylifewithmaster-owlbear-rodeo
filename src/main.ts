@@ -86,18 +86,18 @@ function commandCard() {
 }
 
 function feedCard() {
-  return `<section class="card feed"><h2>${t("Živý feed", "Live feed")}</h2>${feed.length ? feed.map((item) => `<p>${escapeHtml(item[language]).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`).join("") : `<p class="muted">${t("Zatím zde nejsou žádné akce.", "No actions yet.")}</p>`}</section>`;
+  return `<section class="card feed"><h2>${t("Záznam hry", "Game Log")}</h2>${feed.length ? feed.map((item) => `<p>${escapeHtml(item[language]).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`).join("") : `<p class="muted">${t("Zatím zde nejsou žádné akce.", "No actions yet.")}</p>`}</section>`;
 }
 
 function servantCard(servant: Servant) {
   const editable = role === "GM" || servant.ownerId === playerId;
   return `<article class="servant ${editable ? "" : "readonly"}">
-    <h3>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</h3>
+    ${editable ? `<label>${t("Jméno", "Name")}<input class="servant-name" name="name" value="${escapeHtml(servant.name)}" placeholder="${t("Jméno služebníka", "Servant name")}" /></label>` : `<h3>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</h3>`}
     ${servant.captured ? `<p class="notice">${t("Zajatý", "Captured")}</p>` : ""}${servant.horrorPending ? `<p class="notice">${t("Čeká Projev hrůzy", "Horror manifestation pending")}</p>` : ""}
     <div class="grid">${numberInput(t("Sebenenávist", "Self-hatred"), "selfHatred", servant.selfHatred).replace("<input", `<input ${editable ? "" : "disabled"}`)}${numberInput(t("Únava", "Fatigue"), "fatigue", servant.fatigue).replace("<input", `<input ${editable ? "" : "disabled"}`)}</div>
     <label>${t("Více než lidský", "More than human")}<textarea name="moreHuman" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.moreHuman)}</textarea></label>
     <label>${t("Méně než lidský", "Less than human")}<textarea name="lessHuman" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.lessHuman)}</textarea></label>
-    ${editable ? `<label>${t("Jméno", "Name")}<input name="name" value="${escapeHtml(servant.name)}" /></label><button data-save-servant="${escapeHtml(servant.id)}">${t("Uložit služebníka", "Save servant")}</button>` : `<small class="muted">${t("Postava jiného hráče", "Another player's character")}</small>`}
+    ${editable ? `<button data-save-servant="${escapeHtml(servant.id)}">${t("Uložit služebníka", "Save servant")}</button>` : `<small class="muted">${t("Postava jiného hráče", "Another player's character")}</small>`}
   </article>${acquaintanceCard(servant)}${editable ? actionCard(servant) : ""}`;
 }
 
