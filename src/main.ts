@@ -263,6 +263,8 @@ async function runAction(servantId: string) {
     updated = { ...updated, servants: updated.servants.map((item) => item.id === servantId && item.fatigue > updated.master.reason ? { ...item, captured: true } : item) };
     return updated;
   });
+  const nextServant = next.servants.find((item) => item.id === servantId)!;
+  const finaleHint = !tied && kind === "approach" && totalLove(servant) <= state.master.fear + servant.fatigue && totalLove(nextServant) > next.master.fear + nextServant.fatigue;
   const captured = Boolean(next.servants.find((item) => item.id === servantId)?.captured);
   const translateRule = (rule: string) => ({
     "Strach + Sebenenávist": t("Strach + Sebenenávist", "Fear + Self-hatred"),
@@ -282,7 +284,7 @@ async function runAction(servantId: string) {
     if (captured) consequence += `; ${t("služebník padá do zajetí", "the servant is captured")}`;
     const displayTarget = targetName === "vesničanům / cizincům" ? t("vesničanům / cizincům", "villagers / strangers") : targetName;
     const actionText = kind === "approach" ? `${t("Sbližování s", "Approach with")} ${displayTarget}` : `${kind === "violence" ? t("Násilí", "Violence") : t("Zlotřilost", "Villainy")} ${t("proti", "against")} ${displayTarget}`;
-    return `**${servant.name} ${t("provádí", "performs")} ${actionText}**\n${actorLine}\n${opponentLine}\n${actorRoll.total} ${tied ? "=" : won ? ">" : "<"} ${opponentRoll.total} -> **${servant.name} ${(consequence + (!tied && helper ? `. ${t("Pomáhá", "Helped by")} ${helper.name}` : "")).replace(/; /g, ". ")}.**`;
+    return `**${servant.name} ${t("provádí", "performs")} ${actionText}**\n${actorLine}\n${opponentLine}\n${actorRoll.total} ${tied ? "=" : won ? ">" : "<"} ${opponentRoll.total} -> **${servant.name} ${(consequence + (!tied && helper ? `. ${t("Pomáhá", "Helped by")} ${helper.name}` : "")).replace(/; /g, ". ")}.**${finaleHint ? `\n**${t("Láska nyní převyšuje Strach + Únavu — úspěšný vzdor Pánovu příkazu spustí Finále.", "Love now exceeds Fear + Fatigue — successfully defying the Master's command starts the Finale.")}**` : ""}`;
   });
 }
 
