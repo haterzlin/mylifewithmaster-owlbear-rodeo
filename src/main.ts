@@ -1,6 +1,6 @@
 import OBR from "@owlbear-rodeo/sdk";
 import "./style.css";
-import { addAcquaintance, applyActionOutcome, applyFinaleOutcome, attachAcquaintance as attachAcquaintanceState, canEditServant, emptyState, epilogueOptions, normalizeState, poolSize, removeAcquaintance as removeAcquaintanceState, rollDice, updateAcquaintance as updateAcquaintanceState } from "./state";
+import { addAcquaintance, applyActionOutcome, applyFinaleOutcome, attachAcquaintance as attachAcquaintanceState, canEditServant, emptyState, epilogueOptions, normalizeState, poolSize, removeAcquaintance as removeAcquaintanceState, rollDice } from "./state";
 import type { ActionKind, BonusKind, EpilogueKind, GameState, Servant } from "./state";
 
 const KEY = "com.mujzivotspanem/state";
@@ -12,7 +12,7 @@ let playerId = "local";
 type FeedEntry = { cs: string; en: string };
 let feed: FeedEntry[] = [];
 let finaleCompleted = false;
-let view: { kind: "master" } | { kind: "servant"; id: string } | { kind: "acquaintances"; servantId: string; acquaintanceId: string | null } | { kind: "finale"; servantId: string } | null = null;
+let view: { kind: "master" } | { kind: "servant"; id: string } | { kind: "finale"; servantId: string } | null = null;
 type Language = "cs" | "en";
 let language: Language = (localStorage.getItem("mlwm-language") as Language) || (navigator.language.toLowerCase().startsWith("cs") ? "cs" : "en");
 
@@ -50,10 +50,10 @@ function numberInput(label: string, name: string, value: number) {
 
 function render() {
   const own = state.servants.find((servant) => servant.ownerId === playerId);
-  const viewingServantId = view?.kind === "servant" ? view.id : view?.kind === "acquaintances" || view?.kind === "finale" ? view.servantId : undefined;
+  const viewingServantId = view?.kind === "servant" ? view.id : view?.kind === "finale" ? view.servantId : undefined;
   if (viewingServantId && !state.servants.some((servant) => servant.id === viewingServantId)) view = null;
   if (view?.kind === "finale" && state.finaleServantId !== view.servantId) view = null;
-  const header = `<header><div><h1>${t("Můj život s Pánem", "My Life with Master")}</h1><small>${t("Režim", "Role")}: ${role === "GM" ? t("Vypravěč", "Game Master") : t("Hráč", "Player")}</small></div><div class="header-actions">${view ? `<button id="back-to-characters">${view.kind === "acquaintances" ? t("← Zpět na služebníka", "← Back to servant") : t("← Zpět na seznam postav", "← Back to characters")}</button>` : ""}<button id="toggle-language" title="${t("Přepnout do angličtiny", "Switch to Czech")}">${language === "cs" ? "EN" : "CS"}</button></div></header>`;
+  const header = `<header><div><h1>${t("Můj život s Pánem", "My Life with Master")}</h1><small>${t("Režim", "Role")}: ${role === "GM" ? t("Vypravěč", "Game Master") : t("Hráč", "Player")}</small></div><div class="header-actions">${view ? `<button id="back-to-characters">${t("← Zpět na seznam postav", "← Back to characters")}</button>` : ""}<button id="toggle-language" title="${t("Přepnout do angličtiny", "Switch to Czech")}">${language === "cs" ? "EN" : "CS"}</button></div></header>`;
   if (!view) {
     app.innerHTML = `${header}
       <section class="card"><div class="section-title"><h2>${t("Postavy", "Characters")}</h2>${own ? "" : `<button id="new-servant">${t("Vytvořit postavu", "Create character")}</button>`}</div>
@@ -65,7 +65,6 @@ function render() {
   }
   if (view.kind === "master") app.innerHTML = `${header}${masterCard()}${feedCard()}`;
   else if (view.kind === "servant") app.innerHTML = `${header}${servantCard(state.servants.find((servant) => servant.id === viewingServantId)!)}${feedCard()}`;
-  else if (view.kind === "acquaintances") app.innerHTML = `${header}${acquaintanceCard(view.servantId)}${feedCard()}`;
   else app.innerHTML = `${header}${finaleCard(view.servantId)}${feedCard()}`;
   bindEvents();
 }
@@ -92,26 +91,29 @@ function feedCard() {
 
 function servantCard(servant: Servant) {
   const editable = role === "GM" || servant.ownerId === playerId;
-  const acquaintances = state.acquaintances;
-  const linked = servant.acquaintances ?? [];
-  const linkedIds = new Set(linked.map((link) => link.acquaintanceId));
   return `<article class="servant ${editable ? "" : "readonly"}">
     <h3>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</h3>
     ${servant.captured ? `<p class="notice">${t("Zajatý", "Captured")}</p>` : ""}${servant.horrorPending ? `<p class="notice">${t("Čeká Projev hrůzy", "Horror manifestation pending")}</p>` : ""}
     <div class="grid">${numberInput(t("Sebenenávist", "Self-hatred"), "selfHatred", servant.selfHatred).replace("<input", `<input ${editable ? "" : "disabled"}`)}${numberInput(t("Únava", "Fatigue"), "fatigue", servant.fatigue).replace("<input", `<input ${editable ? "" : "disabled"}`)}</div>
     <label>${t("Více než lidský", "More than human")}<textarea name="moreHuman" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.moreHuman)}</textarea></label>
     <label>${t("Méně než lidský", "Less than human")}<textarea name="lessHuman" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.lessHuman)}</textarea></label>
-    <h3>${t("Známosti", "Acquaintances")}</h3>
-    ${linked.length ? `<table class="acquaintances"><thead><tr><th>${t("Známost", "Acquaintance")}</th><th>${t("Láska", "Love")}</th></tr></thead><tbody>${linked.map((link) => {
-      const acquaintance = acquaintances.find((item) => item.id === link.acquaintanceId);
-      if (!acquaintance) return "";
-      const title = escapeHtml(acquaintance.description || "Bez popisu");
-      const name = `<button class="link-button" title="${title}" data-open-acquaintance="${escapeHtml(`${servant.id}:${acquaintance.id}`)}">${escapeHtml(acquaintance.name)}</button>`;
-      return `<tr><td>${name}</td><td><input class="love" type="number" min="0" value="${escapeHtml(String(link.love))}" data-love="${escapeHtml(servant.id)}" data-acquaintance="${escapeHtml(acquaintance.id)}" ${editable ? "" : "disabled"} /></td></tr>`;
-    }).join("")}</tbody></table>` : `<p class=muted>${t("Zatím nemá žádnou Známost.", "No acquaintances yet.")}</p>`}
-    ${editable ? `<button data-open-acquaintances="${escapeHtml(servant.id)}">${t("Nová známost", "New acquaintance")}</button>` : ""}
     ${editable ? `<label>${t("Jméno", "Name")}<input name="name" value="${escapeHtml(servant.name)}" /></label><button data-save-servant="${escapeHtml(servant.id)}">${t("Uložit služebníka", "Save servant")}</button>` : `<small class="muted">${t("Postava jiného hráče", "Another player's character")}</small>`}
-  </article>${editable ? actionCard(servant) : ""}`;
+  </article>${acquaintanceCard(servant)}${editable ? actionCard(servant) : ""}`;
+}
+
+function acquaintanceCard(servant: Servant) {
+  const editable = role === "GM" || servant.ownerId === playerId;
+  const linked = servant.acquaintances ?? [];
+  const linkedIds = new Set(linked.map((link) => link.acquaintanceId));
+  const available = state.acquaintances.filter((item) => !linkedIds.has(item.id));
+  return `<section class="card acquaintances-section"><h2>${t("Známosti", "Acquaintances")}</h2>
+    <table class="acquaintances"><thead><tr><th>${t("Jméno", "Name")}</th><th>${t("Láska", "Love")}</th><th></th></tr></thead><tbody>${linked.map((link) => {
+      const acquaintance = state.acquaintances.find((item) => item.id === link.acquaintanceId);
+      if (!acquaintance) return "";
+      return `<tr><td>${escapeHtml(acquaintance.name)}</td><td><input class="love" type="number" min="0" value="${escapeHtml(String(link.love))}" data-love="${escapeHtml(servant.id)}" data-acquaintance="${escapeHtml(acquaintance.id)}" ${editable ? "" : "disabled"} /></td><td>${role === "GM" ? `<button class="remove-acquaintance" title="${t("Odebrat známost", "Remove acquaintance")}" data-remove-acquaintance="${escapeHtml(acquaintance.id)}">×</button>` : ""}</td></tr>`;
+    }).join("")}${editable ? `<tr class="new-acquaintance"><td><input data-new-acquaintance-name="${escapeHtml(servant.id)}" placeholder="${t("Jméno nové známosti", "New acquaintance name")}" /></td><td></td><td><button data-create-acquaintance="${escapeHtml(servant.id)}" title="${t("Přidat známost", "Add acquaintance")}">+</button></td></tr>` : ""}</tbody></table>
+    ${editable && available.length ? `<label>${t("Připojit existující známost", "Attach existing acquaintance")}<select data-add-acquaintance="${escapeHtml(servant.id)}">${available.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join("")}</select></label><button data-attach-acquaintance="${escapeHtml(servant.id)}">${t("Připojit", "Attach")}</button>` : ""}
+  </section>`;
 }
 
 function actionCard(servant: Servant) {
@@ -140,18 +142,6 @@ function epilogueCard() {
     const options = epilogueOptions(servant, state.master.reason);
     return `<div class="epilogue"><h3>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</h3><small>${t("Sebenenávist", "Self-hatred")} ${servant.selfHatred} · ${t("Únava", "Fatigue")} ${servant.fatigue} · ${t("Láska", "Love")} ${totalLove(servant)}</small><ul>${options.map((option) => `<li>${t(...labels[option])}</li>`).join("")}</ul></div>`;
   }).join("")}</section>`;
-}
-
-function acquaintanceCard(servantId: string) {
-  const acquaintanceId = view?.kind === "acquaintances" ? view.acquaintanceId : null;
-  const acquaintance = acquaintanceId ? state.acquaintances.find((item) => item.id === acquaintanceId) : undefined;
-  const servant = state.servants.find((item) => item.id === servantId)!;
-  const linkedIds = new Set(servant.acquaintances.map((link) => link.acquaintanceId));
-  const available = state.acquaintances.filter((item) => !linkedIds.has(item.id));
-  return `<section class="card">
-    <h2>${acquaintance ? t("Upravit známost", "Edit acquaintance") : t("Nová známost", "New acquaintance")}</h2>
-    ${acquaintance ? `<label>${t("Jméno", "Name")}<input data-edit-acquaintance-name="${escapeHtml(acquaintance.id)}" value="${escapeHtml(acquaintance.name)}" ${role === "GM" ? "" : "disabled"} /></label><label>${t("Popis", "Description")}<textarea data-edit-acquaintance-description="${escapeHtml(acquaintance.id)}" rows="6" ${role === "GM" ? "" : "disabled"}>${escapeHtml(acquaintance.description)}</textarea></label>${role === "GM" ? `<div class="acquaintance-edit-actions"><button data-save-acquaintance="${escapeHtml(acquaintance.id)}">${t("Uložit známost", "Save acquaintance")}</button><button data-delete-acquaintance="${escapeHtml(acquaintance.id)}">${t("Odstranit známost", "Delete acquaintance")}</button></div>` : ""}` : `<h3>${t("Připojit existující známost", "Attach existing acquaintance")}</h3>${available.length ? `<select data-add-acquaintance="${escapeHtml(servantId)}">${available.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join("")}</select><button data-attach-acquaintance="${escapeHtml(servantId)}">${t("Připojit existující známost", "Attach acquaintance")}</button>` : ""}<h3>${t("Nová známost", "New acquaintance")}</h3><input data-new-acquaintance-name="${escapeHtml(servantId)}" placeholder="${t("Jméno známosti", "Acquaintance name")}" /><textarea data-new-acquaintance-description="${escapeHtml(servantId)}" rows="4" placeholder="${t("Popis známosti", "Acquaintance description")}"></textarea><button data-create-acquaintance="${escapeHtml(servantId)}">${t("Vytvořit známost", "Create acquaintance")}</button>`}
-  </section>`;
 }
 
 function formValue(selector: string) {
@@ -407,27 +397,10 @@ async function createAcquaintance(servantId: string) {
   const servant = state.servants.find((item) => item.id === servantId);
   if (!servant || !canEditServant(role, playerId, servant)) return;
   const name = formValue(`[data-new-acquaintance-name="${selectorValue(servantId)}"]`);
-  const description = formValue(`[data-new-acquaintance-description="${selectorValue(servantId)}"]`);
   if (!name) return;
-  const acquaintance = { id: crypto.randomUUID(), name, description };
+  const acquaintance = { id: crypto.randomUUID(), name };
   await updateState((current) => addAcquaintance(current, servantId, acquaintance));
-  view = { kind: "servant", id: servantId };
   render();
-}
-
-async function saveAcquaintance(id: string) {
-  if (role !== "GM") return;
-  const current = state.acquaintances.find((item) => item.id === id);
-  if (!current) return;
-  await updateState((state) => updateAcquaintanceState(state, {
-    ...current,
-    name: formValue(`[data-edit-acquaintance-name="${selectorValue(id)}"]`) || current.name,
-    description: formValue(`[data-edit-acquaintance-description="${selectorValue(id)}"]`),
-  }));
-  if (view?.kind === "acquaintances") {
-    view = { kind: "servant", id: view.servantId };
-    render();
-  }
 }
 
 async function deleteAcquaintance(id: string) {
@@ -436,10 +409,6 @@ async function deleteAcquaintance(id: string) {
   if (!acquaintance || !window.confirm(`Opravdu odstranit známost „${acquaintance.name}“ u všech služebníků?`)) return;
   await updateState((current) => removeAcquaintanceState(current, id));
   await publish(() => `${t("Známost", "Acquaintance")} ${acquaintance.name} ${t("byla odstraněna.", "was deleted.")}`);
-  if (view?.kind === "acquaintances") {
-    view = { kind: "servant", id: view.servantId };
-    render();
-  }
 }
 
 async function createServant() {
@@ -453,7 +422,7 @@ async function createServant() {
 
 function bindEvents() {
   document.querySelector("#toggle-language")?.addEventListener("click", () => { language = language === "cs" ? "en" : "cs"; localStorage.setItem("mlwm-language", language); render(); });
-  document.querySelector("#back-to-characters")?.addEventListener("click", () => { view = view?.kind === "acquaintances" ? { kind: "servant", id: view.servantId } : null; render(); });
+  document.querySelector("#back-to-characters")?.addEventListener("click", () => { view = null; render(); });
   document.querySelector("[data-open-master]")?.addEventListener("click", () => { view = { kind: "master" }; render(); });
   document.querySelectorAll<HTMLElement>("[data-open-servant]").forEach((button) => button.addEventListener("click", () => { view = { kind: "servant", id: button.dataset.openServant! }; render(); }));
   document.querySelector("#save-master")?.addEventListener("click", () => void saveMaster());
@@ -464,12 +433,9 @@ function bindEvents() {
     else void createServant();
   });
   document.querySelectorAll<HTMLElement>("[data-save-servant]").forEach((button) => button.addEventListener("click", () => void saveServant(button.dataset.saveServant!)));
-  document.querySelectorAll<HTMLElement>("[data-open-acquaintances]").forEach((button) => button.addEventListener("click", () => { view = { kind: "acquaintances", servantId: button.dataset.openAcquaintances!, acquaintanceId: null }; render(); }));
-  document.querySelectorAll<HTMLElement>("[data-open-acquaintance]").forEach((button) => button.addEventListener("click", () => { const [servantId, acquaintanceId] = button.dataset.openAcquaintance!.split(":"); view = { kind: "acquaintances", servantId, acquaintanceId }; render(); }));
   document.querySelectorAll<HTMLElement>("[data-attach-acquaintance]").forEach((button) => button.addEventListener("click", () => void attachAcquaintance(button.dataset.attachAcquaintance!)));
   document.querySelectorAll<HTMLElement>("[data-create-acquaintance]").forEach((button) => button.addEventListener("click", () => void createAcquaintance(button.dataset.createAcquaintance!)));
-  document.querySelectorAll<HTMLElement>("[data-save-acquaintance]").forEach((button) => button.addEventListener("click", () => void saveAcquaintance(button.dataset.saveAcquaintance!)));
-  document.querySelectorAll<HTMLElement>("[data-delete-acquaintance]").forEach((button) => button.addEventListener("click", () => void deleteAcquaintance(button.dataset.deleteAcquaintance!)));
+  document.querySelectorAll<HTMLElement>("[data-remove-acquaintance]").forEach((button) => button.addEventListener("click", () => void deleteAcquaintance(button.dataset.removeAcquaintance!)));
   document.querySelectorAll<HTMLElement>("[data-run-action]").forEach((button) => button.addEventListener("click", () => void runAction(button.dataset.runAction!)));
   document.querySelectorAll<HTMLElement>("[data-open-finale]").forEach((button) => button.addEventListener("click", () => { view = { kind: "finale", servantId: button.dataset.openFinale! }; render(); }));
   document.querySelectorAll<HTMLElement>("[data-escape]").forEach((button) => button.addEventListener("click", () => void escapeCaptivity(button.dataset.escape!)));

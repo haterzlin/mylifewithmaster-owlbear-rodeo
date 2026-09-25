@@ -12,7 +12,6 @@ import {
   poolSize,
   removeAcquaintance,
   rollDice,
-  updateAcquaintance,
 } from "../src/state.ts";
 
 const servant = {
@@ -57,14 +56,14 @@ test("hráč upravuje jen vlastního služebníka, Vypravěč všechny", () => {
 
 test("nová známost se uloží a připojí služebníkovi", () => {
   const state = { ...emptyState, servants: [{ ...servant }] };
-  const acquaintance = { id: "acq-1", name: "Mlynář", description: "Pomáhá vesnici." };
+  const acquaintance = { id: "acq-1", name: "Mlynář" };
   const result = addAcquaintance(state, servant.id, acquaintance);
   assert.deepEqual(result.acquaintances, [acquaintance]);
   assert.deepEqual(result.servants[0].acquaintances, [{ acquaintanceId: "acq-1", love: 0 }]);
 });
 
 test("známost lze připojit více služebníkům, ale ne dvakrát stejnému", () => {
-  const state = { ...emptyState, servants: [{ ...servant }, { ...servant, id: "servant-2", ownerId: "player-2" }], acquaintances: [{ id: "acq-1", name: "Mlynář", description: "" }] };
+  const state = { ...emptyState, servants: [{ ...servant }, { ...servant, id: "servant-2", ownerId: "player-2" }], acquaintances: [{ id: "acq-1", name: "Mlynář" }] };
   const once = attachAcquaintance(state, "servant-1", "acq-1");
   const twice = attachAcquaintance(once, "servant-1", "acq-1");
   const other = attachAcquaintance(twice, "servant-2", "acq-1");
@@ -72,14 +71,8 @@ test("známost lze připojit více služebníkům, ale ne dvakrát stejnému", (
   assert.equal(other.servants[1].acquaintances.length, 1);
 });
 
-test("úprava známosti změní sdílený záznam", () => {
-  const state = { ...emptyState, acquaintances: [{ id: "acq-1", name: "Mlynář", description: "Původní popis" }] };
-  const result = updateAcquaintance(state, { id: "acq-1", name: "Starý mlynář", description: "Nový popis" });
-  assert.deepEqual(result.acquaintances[0], { id: "acq-1", name: "Starý mlynář", description: "Nový popis" });
-});
-
 test("odstranění známosti smaže záznam i vazby všech služebníků", () => {
-  const state = { ...emptyState, acquaintances: [{ id: "acq-1", name: "Mlynář", description: "" }], servants: [
+  const state = { ...emptyState, acquaintances: [{ id: "acq-1", name: "Mlynář" }], servants: [
     { ...servant, acquaintances: [{ acquaintanceId: "acq-1", love: 2 }] },
     { ...servant, id: "servant-2", acquaintances: [{ acquaintanceId: "acq-1", love: 1 }] },
   ] };

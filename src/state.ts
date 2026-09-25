@@ -13,7 +13,7 @@ export type Servant = {
   horrorPending?: boolean;
 };
 
-export type Acquaintance = { id: string; name: string; description: string };
+export type Acquaintance = { id: string; name: string };
 
 export type GameState = {
   master: { name: string; description: string; reason: number; fear: number };
@@ -63,7 +63,6 @@ export function normalizeState(value: Partial<GameState> | undefined): GameState
     return {
       id: id(acquaintance.id, `acquaintance-${index}`),
       name: text(acquaintance.name),
-      description: text(acquaintance.description),
     };
   }) : [];
   const servants = Array.isArray(source.servants) ? source.servants.filter((item) => Object.values(record(item)).length > 0).map((item, index) => {
@@ -120,13 +119,6 @@ export function addAcquaintance(state: GameState, servantId: string, acquaintanc
     servants: state.servants.map((servant) => servant.id === servantId
       ? { ...servant, acquaintances: [...servant.acquaintances, { acquaintanceId: acquaintance.id, love: 0 }] }
       : servant),
-  };
-}
-
-export function updateAcquaintance(state: GameState, acquaintance: Acquaintance): GameState {
-  return {
-    ...structuredClone(state),
-    acquaintances: state.acquaintances.map((item) => item.id === acquaintance.id ? acquaintance : item),
   };
 }
 

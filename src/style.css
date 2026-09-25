@@ -19,7 +19,6 @@ input[type=number] { min-width: 0; }
 button { border: 0; border-radius: 6px; padding: 8px 12px; color: var(--color-background); background: var(--color-text-secondary); font-weight: 700; cursor: pointer; }
 button:active { transform: translateY(1px); }
 #run-command + button { margin-left: 8px; }
-.link-button { border: 0; padding: 0; color: var(--color-text-secondary); background: transparent; font-weight: 600; text-align: left; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .section-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .character-list { display: grid; gap: 8px; }
@@ -29,9 +28,11 @@ button:active { transform: translateY(1px); }
 .readonly { opacity: .9; }
 .acquaintances { width: 100%; border-collapse: collapse; margin: 6px 0 12px; }
 .acquaintances th, .acquaintances td { text-align: left; padding: 7px 4px; border-bottom: 1px solid var(--color-border); vertical-align: top; }
-.acquaintances th:last-child, .acquaintances td:last-child { width: 90px; }
+.acquaintances th:nth-child(2), .acquaintances td:nth-child(2) { width: 90px; }
+.acquaintances th:last-child, .acquaintances td:last-child { width: 34px; text-align: right; }
 .acquaintances input.love { margin: 0; padding: 6px; }
-.acquaintance-edit-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.acquaintances .new-acquaintance input { margin: 0; }
+.remove-acquaintance { padding: 2px 8px; color: var(--color-text); background: transparent; font-size: 1.1rem; }
 .action-box { margin-top: 0; }
 .action-box select, .action-box button { margin: 4px 4px 4px 0; width: calc(50% - 8px); }
 .action-box button { width: auto; }
