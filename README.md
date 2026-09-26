@@ -38,31 +38,34 @@ npm test
 ```
 
 The automated tests cover data normalization, player and Master permissions,
-creating and connecting Connections, editing shared Connections, d4 rolls and
-their effects on minion stats, Horror Reveals, the Endgame, ties, and removing
-Connections. There are currently 12 tests.
+shared Acquaintances with individual Love values, d4 rolls and their effects
+on minion stats, Horror manifestations, the Finale, ties, and removing
+Acquaintances. There are currently 14 tests.
 
 ## Features
 
 - shared description of the Master, the estate, and the surroundings;
 - minions with Self-Loathing, Weariness, More Than Human, and Less Than Human attributes;
-- shared Connections with an individual Love value for each minion;
-- removing a Connection and all its links by the Master;
+- all Acquaintances are visible to every minion, with an individual Love value
+  for each minion;
+- renaming and removing Acquaintances and their links by the Master;
 - Master and player permissions;
-- separate minion and Connection panels;
-- game actions with d4 rolls: the Master's Command, Violence, Villainy, and State of Grace;
+- a separate Acquaintances section in the minion panel;
+- game actions with d4 rolls: defying the Master's command, Violence, Villainy, and Approach;
 - bonus dice: Intimacy d4, Desperation d6, and Sincerity d8;
 - assistance, capture and escape, Horror Reveals, and the Endgame;
 - a separate Endgame panel with multiple helpers and separate bonuses for both sides;
 - automatic changes to Love, Self-Loathing, and Weariness after rolls;
-- a live action feed synchronized between players in the room;
+- a Game Log synchronized between players in the room;
 - data synchronization within an Owlbear Rodeo room;
 - support for Owlbear Rodeo's light and dark themes, including live theme changes;
 - switching between Czech and English; the language choice is saved in the browser.
 
 ## Development status
 
-The project is currently intended for local development only. Data is stored in
-the metadata of the current Owlbear Rodeo room. The public beta is hosted at
-the production manifest URL above; the extension is not yet listed in the
-official Owlbear Rodeo extension catalog.
+The project is available as a public beta. Data is stored in the metadata of
+the current Owlbear Rodeo room. The extension is hosted at the production
+manifest URL above but is not yet listed in the official Owlbear Rodeo
+extension catalog.
+
+This project is distributed under the [MIT License](LICENSE).

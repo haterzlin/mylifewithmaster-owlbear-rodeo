@@ -38,23 +38,24 @@ npm test
 ```
 
 Automatické testy ověřují normalizaci dat, oprávnění hráčů a Vypravěče,
-vytváření a připojování známostí, úpravu sdílených známostí, hody k4 a následky
-akcí na statistiky služebníků, Projevy hrůzy, Finále, remízy a odstranění známostí. Aktuálně je k dispozici 12 testů.
+sdílené známosti s individuální hodnotou Lásky, hody k4 a následky akcí na
+statistiky služebníků, Projevy hrůzy, Finále, remízy a odstranění známostí.
+Aktuálně je k dispozici 14 testů.
 
 ## Funkce
 
 - společný popis Pána, sídla a prostředí;
 - služebníci s atributy Sebenenávist, Únava, Více než lidský a Méně než lidský;
-- sdílené známosti s individuální hodnotou Lásky pro každého služebníka;
-- odstranění známosti Vypravěčem včetně jejích vazeb;
+- všechny známosti viditelné pro všechny služebníky s individuální hodnotou Lásky;
+- přejmenování a odstranění známosti Vypravěčem včetně jejích vazeb;
 - oprávnění Vypravěče a hráčů;
-- samostatné panely pro služebníky a známosti;
-- herní akce s hody k4: Pánův příkaz, Násilí, Zlotřilost a Sbližování;
+- samostatná sekce Známosti v panelu služebníka;
+- herní akce s hody k4: Vzdorovat příkazu pána, Násilí, Zlotřilost a Sbližování;
 - bonusové kostky Intimita k4, Zoufalství k6 a Upřímnost k8;
 - vzájemná výpomoc, zajetí a vymanění, Projevy hrůzy a Finále;
 - samostatný panel Finále s více pomocníky a oddělenými bonusy obou stran;
 - automatické změny Lásky, Sebenenávisti a Únavy po hodech;
-- živý feed akcí synchronizovaný mezi hráči v místnosti;
+- Záznam hry synchronizovaný mezi hráči v místnosti;
 - synchronizace dat v rámci místnosti Owlbear Rodeo.
 - přebírání světlého/tmavého motivu Owlbear Rodeo včetně jeho změn za běhu.
 - přepínání mezi českou a anglickou verzí; volba jazyka se uloží v prohlížeči.
@@ -62,5 +63,7 @@ akcí na statistiky služebníků, Projevy hrůzy, Finále, remízy a odstraněn
 ## Stav vývoje
 
 Projekt je ve veřejné beta verzi. Data se ukládají do metadat aktuální
-místnosti Owlbear Rodeo. Rozšíření zatím není zařazené v oficiálním katalogu
-rozšíření Owlbear Rodeo.
+místnosti Owlbear Rodeo. Rozšíření je dostupné na produkční adrese manifestu,
+ale zatím není zařazené v oficiálním katalogu rozšíření Owlbear Rodeo.
+
+Projekt je distribuován pod licencí [MIT](LICENSE).
