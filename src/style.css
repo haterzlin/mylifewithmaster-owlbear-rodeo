@@ -31,6 +31,7 @@ button:active { transform: translateY(1px); }
 .acquaintances th:nth-child(2), .acquaintances td:nth-child(2) { width: 90px; }
 .acquaintances th:last-child, .acquaintances td:last-child { width: 34px; text-align: right; }
 .acquaintances input.love { margin: 0; padding: 6px; }
+.acquaintances input.acquaintance-name { margin: 0; padding: 6px; }
 .acquaintances .new-acquaintance input { margin: 0; }
 .remove-acquaintance { padding: 2px 8px; color: var(--color-text); background: transparent; font-size: 1.1rem; }
 .action-box { margin-top: 0; }

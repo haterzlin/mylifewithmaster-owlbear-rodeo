@@ -109,7 +109,7 @@ function acquaintanceCard(servant: Servant) {
     <table class="acquaintances"><thead><tr><th>${t("Jméno", "Name")}</th><th>${t("Láska", "Love")}</th><th></th></tr></thead><tbody>${sortedLinked.map((link) => {
       const acquaintance = state.acquaintances.find((item) => item.id === link.acquaintanceId);
       if (!acquaintance) return "";
-      return `<tr><td>${escapeHtml(acquaintance.name)}</td><td><input class="love" type="number" min="0" value="${escapeHtml(String(link.love))}" data-love="${escapeHtml(servant.id)}" data-acquaintance="${escapeHtml(acquaintance.id)}" ${editable ? "" : "disabled"} /></td><td>${role === "GM" ? `<button class="remove-acquaintance" title="${t("Odebrat známost", "Remove acquaintance")}" data-remove-acquaintance="${escapeHtml(acquaintance.id)}">×</button>` : ""}</td></tr>`;
+      return `<tr><td>${role === "GM" ? `<input class="acquaintance-name" value="${escapeHtml(acquaintance.name)}" data-acquaintance-name="${escapeHtml(acquaintance.id)}" />` : escapeHtml(acquaintance.name)}</td><td><input class="love" type="number" min="0" value="${escapeHtml(String(link.love))}" data-love="${escapeHtml(servant.id)}" data-acquaintance="${escapeHtml(acquaintance.id)}" ${editable ? "" : "disabled"} /></td><td>${role === "GM" ? `<button class="remove-acquaintance" title="${t("Odebrat známost", "Remove acquaintance")}" data-remove-acquaintance="${escapeHtml(acquaintance.id)}">×</button>` : ""}</td></tr>`;
     }).join("")}${editable ? `<tr class="new-acquaintance"><td><input data-new-acquaintance-name="${escapeHtml(servant.id)}" placeholder="${t("Jméno nové známosti", "New acquaintance name")}" /></td><td></td><td><button data-create-acquaintance="${escapeHtml(servant.id)}" title="${t("Přidat známost", "Add acquaintance")}">+</button></td></tr>` : ""}</tbody></table>
     ${editable ? `<button data-save-servant="${escapeHtml(servant.id)}">${t("Uložit změny", "Save changes")}</button>` : ""}
   </section>`;
@@ -368,7 +368,12 @@ async function saveServant(id: string) {
     selfHatred: inputNumber(value("selfHatred")), fatigue: inputNumber(value("fatigue")),
     acquaintances: servant.acquaintances.map((link) => ({ ...link, love: inputNumber(document.querySelector<HTMLInputElement>(`[data-love="${selectorValue(id)}"][data-acquaintance="${selectorValue(link.acquaintanceId)}"]`)?.value ?? "") })),
   };
+  const acquaintanceNames = role === "GM" ? state.acquaintances.map((item) => ({
+    ...item,
+    name: formValue(`[data-acquaintance-name="${selectorValue(item.id)}"]`) || item.name,
+  })) : state.acquaintances;
   await updateState((current) => ({ ...current,
+    acquaintances: acquaintanceNames,
     servants: current.servants.map((item) => item.id === id ? {
     ...item, ...next,
   } : item) }));
@@ -379,6 +384,9 @@ async function saveServant(id: string) {
     const updated = next.acquaintances.find((item) => item.acquaintanceId === link.acquaintanceId);
     const acquaintance = state.acquaintances.find((item) => item.id === link.acquaintanceId);
     if (updated && updated.love !== link.love) changes.push({ cs: `Láska (${acquaintance?.name || "Známost"}) ${link.love} → ${updated.love}`, en: `Love (${acquaintance?.name || "Acquaintance"}) ${link.love} → ${updated.love}` });
+  });
+  if (role === "GM") state.acquaintances.forEach((item, index) => {
+    if (item.name !== acquaintanceNames[index].name) changes.push({ cs: `Známost ${item.name} → ${acquaintanceNames[index].name}`, en: `Acquaintance ${item.name} → ${acquaintanceNames[index].name}` });
   });
   if (servant.moreHuman !== next.moreHuman) changes.push({ cs: "změnil popis Více než lidský", en: "changed the More than human description" });
   if (servant.lessHuman !== next.lessHuman) changes.push({ cs: "změnil popis Méně než lidský", en: "changed the Less than human description" });
