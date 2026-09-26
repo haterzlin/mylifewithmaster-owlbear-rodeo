@@ -82,7 +82,9 @@ function masterCard() {
 }
 
 function commandCard() {
-  return `<section class="card"><h2>${t("Pánův příkaz", "Master's command")}</h2><label>${t("Cíl", "Target")}<select id="command-target">${state.servants.length ? state.servants.map((servant) => `<option value="${escapeHtml(servant.id)}">${escapeHtml(servant.name || t("Služebník bez jména", "Unnamed servant"))}</option>`).join("") : `<option disabled selected>${t("Nejdříve vytvoř služebníka", "Create a servant first")}</option>`}</select></label><label>${t("Bonus Pána", "Master bonus")}<select id="command-master-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option></select></label><label>${t("Bonus služebníka", "Servant bonus")}<select id="command-servant-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</option></select></label><button id="run-command" ${state.servants.length ? "" : "disabled"}>${t("Hodit", "Roll")}</button>${state.finaleServantId ? `<button data-open-finale="${escapeHtml(state.finaleServantId)}">${t("Otevřít Finále", "Open Finale")}</button>` : ""}</section>`;
+  const servant = state.servants[0];
+  const finaleReady = servant && totalLove(servant) > state.master.fear + servant.fatigue;
+  return `<section class="card"><h2>${t("Vzdorovat příkazu pána", "Defy the Master's command")}</h2><p id="command-finale-hint" class="muted">${finaleReady ? t("Úspěch vyvolá Finále.", "Success will trigger the Finale.") : t("Úspěch nevyvolá Finále.", "Success will not trigger the Finale.")}</p><label>${t("Cíl", "Target")}<select id="command-target">${state.servants.length ? state.servants.map((servant) => `<option value="${escapeHtml(servant.id)}">${escapeHtml(servant.name || t("Služebník bez jména", "Unnamed servant"))}</option>`).join("") : `<option disabled selected>${t("Nejdříve vytvoř služebníka", "Create a servant first")}</option>`}</select></label><label>${t("Bonus Pána", "Master bonus")}<select id="command-master-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option></select></label><label>${t("Bonus služebníka", "Servant bonus")}<select id="command-servant-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</select></label><button id="run-command" ${state.servants.length ? "" : "disabled"}>${t("Hodit", "Roll")}</button>${state.finaleServantId ? `<button data-open-finale="${escapeHtml(state.finaleServantId)}">${t("Otevřít Finále", "Open Finale")}</button>` : ""}</section>`;
 }
 
 function feedCard() {
@@ -262,8 +264,6 @@ async function runAction(servantId: string) {
     updated = { ...updated, servants: updated.servants.map((item) => item.id === servantId && item.fatigue > updated.master.reason ? { ...item, captured: true } : item) };
     return updated;
   });
-  const nextServant = next.servants.find((item) => item.id === servantId)!;
-  const finaleHint = !tied && kind === "approach" && totalLove(servant) <= state.master.fear + servant.fatigue && totalLove(nextServant) > next.master.fear + nextServant.fatigue;
   const captured = Boolean(next.servants.find((item) => item.id === servantId)?.captured);
   const translateRule = (rule: string) => ({
     "Strach + Sebenenávist": t("Strach + Sebenenávist", "Fear + Self-hatred"),
@@ -283,7 +283,7 @@ async function runAction(servantId: string) {
     if (captured) consequence += `; ${t("služebník padá do zajetí", "the servant is captured")}`;
     const displayTarget = targetName === "vesničanům / cizincům" ? t("vesničanům / cizincům", "villagers / strangers") : targetName;
     const actionText = kind === "approach" ? `${t("Sbližování s", "Approach with")} ${displayTarget}` : `${kind === "violence" ? t("Násilí", "Violence") : t("Zlotřilost", "Villainy")} ${t("proti", "against")} ${displayTarget}`;
-    return `**${servant.name} ${t("provádí", "performs")} ${actionText}**\n${actorLine}\n${opponentLine}\n${actorRoll.total} ${tied ? "=" : won ? ">" : "<"} ${opponentRoll.total} -> **${servant.name} ${(consequence + (!tied && helper ? `. ${t("Pomáhá", "Helped by")} ${helper.name}` : "")).replace(/; /g, ". ")}.**${finaleHint ? `\n**${t("Láska nyní převyšuje Strach + Únavu — úspěšný vzdor Pánovu příkazu spustí Finále.", "Love now exceeds Fear + Fatigue — successfully defying the Master's command starts the Finale.")}**` : ""}`;
+    return `**${servant.name} ${t("provádí", "performs")} ${actionText}**\n${actorLine}\n${opponentLine}\n${actorRoll.total} ${tied ? "=" : won ? ">" : "<"} ${opponentRoll.total} -> **${servant.name} ${(consequence + (!tied && helper ? `. ${t("Pomáhá", "Helped by")} ${helper.name}` : "")).replace(/; /g, ". ")}.**`;
   });
 }
 
@@ -427,6 +427,11 @@ function bindEvents() {
   document.querySelectorAll<HTMLElement>("[data-open-servant]").forEach((button) => button.addEventListener("click", () => { view = { kind: "servant", id: button.dataset.openServant! }; render(); }));
   document.querySelector("#save-master")?.addEventListener("click", () => void saveMaster());
   document.querySelector("#run-command")?.addEventListener("click", () => void runCommand());
+  document.querySelector<HTMLSelectElement>("#command-target")?.addEventListener("change", (event) => {
+    const servant = state.servants.find((item) => item.id === (event.currentTarget as HTMLSelectElement).value);
+    const hint = document.querySelector<HTMLElement>("#command-finale-hint");
+    if (hint) hint.textContent = servant && totalLove(servant) > state.master.fear + servant.fatigue ? t("Úspěch vyvolá Finále.", "Success will trigger the Finale.") : t("Úspěch nevyvolá Finále.", "Success will not trigger the Finale.");
+  });
   document.querySelector("#new-servant")?.addEventListener("click", () => {
     const own = state.servants.find((servant) => servant.ownerId === playerId);
     if (own) { view = { kind: "servant", id: own.id }; render(); }
