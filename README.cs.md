@@ -39,8 +39,9 @@ npm test
 
 Automatické testy ověřují normalizaci dat, oprávnění hráčů a Vypravěče,
 sdílené známosti s individuální hodnotou Lásky, hody k4 a následky akcí na
-statistiky služebníků, Projevy hrůzy, Finále, remízy a odstranění známostí.
-Aktuálně je k dispozici 14 testů.
+statistiky služebníků, výpomoc, Projevy hrůzy, Finále, remízy a odstranění
+známostí. Aktuálně je k dispozici 18 testů. UI a integrační testy Owlbear SDK
+zatím nejsou součástí projektu.
 
 ## Funkce
 

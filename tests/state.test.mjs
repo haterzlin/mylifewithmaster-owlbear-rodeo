@@ -66,6 +66,17 @@ test("normalizace doplní každému služebníkovi všechny známosti", () => {
   assert.deepEqual(state.servants[0].acquaintances, [{ acquaintanceId: "acq-1", love: 0 }]);
 });
 
+test("normalizace zachová Lásku a doplní jen chybějící známosti", () => {
+  const state = normalizeState({
+    acquaintances: [{ id: "acq-1", name: "Mlynář" }, { id: "acq-2", name: "Kovář" }],
+    servants: [{ ...servant, acquaintances: [{ acquaintanceId: "acq-1", love: 3 }] }],
+  });
+  assert.deepEqual(state.servants[0].acquaintances, [
+    { acquaintanceId: "acq-1", love: 3 },
+    { acquaintanceId: "acq-2", love: 0 },
+  ]);
+});
+
 test("odstranění známosti smaže záznam i vazby všech služebníků", () => {
   const state = { ...emptyState, acquaintances: [{ id: "acq-1", name: "Mlynář" }], servants: [
     { ...servant, acquaintances: [{ acquaintanceId: "acq-1", love: 2 }] },
@@ -127,4 +138,25 @@ test("remíza nepřidá následky akce", () => {
   const state = { ...emptyState, servants: [{ ...servant, fatigue: 2 }] };
   const result = applyActionOutcome(state, servant.id, "violence", "npc", false, false, undefined, true);
   assert.deepEqual(result, state);
+});
+
+test("neúspěšná akce zvýší následky pomocníkovi", () => {
+  const helper = { ...servant, id: "helper-1", fatigue: 2 };
+  const state = { ...emptyState, servants: [{ ...servant }, helper] };
+  const result = applyActionOutcome(state, servant.id, "violence", "npc", false, false, helper.id);
+  assert.equal(result.servants[1].fatigue, 3);
+  assert.equal(result.servants[1].selfHatred, helper.selfHatred);
+});
+
+test("remíza ve Finále nezvýší Únavu a Finále pokračuje", () => {
+  const state = { ...emptyState, finaleServantId: servant.id, servants: [{ ...servant, fatigue: 2 }] };
+  const result = applyFinaleOutcome(state, servant.id, false, true);
+  assert.equal(result.servants[0].fatigue, 2);
+  assert.equal(result.finaleServantId, servant.id);
+});
+
+test("běžný hod k6 započítá šestku", () => {
+  const result = rollDice(1, 6, () => 0.99);
+  assert.deepEqual(result.rolls, [6]);
+  assert.equal(result.total, 6);
 });

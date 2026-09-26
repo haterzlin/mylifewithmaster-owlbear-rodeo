@@ -38,9 +38,10 @@ npm test
 ```
 
 The automated tests cover data normalization, player and Master permissions,
-shared Acquaintances with individual Love values, d4 rolls and their effects
-on minion stats, Horror manifestations, the Finale, ties, and removing
-Acquaintances. There are currently 14 tests.
+shared Acquaintances with individual Love values, dice rolls and their effects
+on minion stats, assistance, Horror manifestations, the Finale, ties, and
+removing Acquaintances. There are currently 18 tests. UI and Owlbear SDK
+integration tests are not included yet.
 
 ## Features
 
