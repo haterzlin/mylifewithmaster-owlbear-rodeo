@@ -23,7 +23,7 @@ export type GameState = {
   finaleServantId?: string;
 };
 
-export type ActionKind = "command" | "violence" | "villainy" | "approach";
+export type ActionKind = "violence" | "villainy" | "approach";
 export type BonusKind = "none" | "intimacy" | "despair" | "honesty";
 
 export type DiceRoll = { dice: number; rolls: number[]; total: number };
@@ -55,7 +55,6 @@ function id(value: unknown, fallback: string) {
 }
 
 export function normalizeState(value: Partial<GameState> | undefined): GameState {
-  const current = structuredClone(emptyState);
   const source = record(value);
   const master = record(source.master);
   const acquaintances = Array.isArray(source.acquaintances) ? source.acquaintances.filter((item) => Object.values(record(item)).length > 0).map((item, index) => {
@@ -89,7 +88,6 @@ export function normalizeState(value: Partial<GameState> | undefined): GameState
     };
   }) : [];
   return {
-    ...current,
     master: {
       name: text(master.name),
       description: text(master.description),
@@ -107,7 +105,7 @@ export function canEditServant(role: Role, playerId: string, servant: Servant) {
   return role === "GM" || servant.ownerId === playerId;
 }
 
-export function addAcquaintance(state: GameState, servantId: string, acquaintance: Acquaintance): GameState {
+export function addAcquaintance(state: GameState, acquaintance: Acquaintance): GameState {
   return {
     ...structuredClone(state),
     acquaintances: [...state.acquaintances, acquaintance],
@@ -155,7 +153,6 @@ export function epilogueOptions(servant: Servant, reason: number): EpilogueKind[
 }
 
 export function applyActionOutcome(state: GameState, servantId: string, kind: ActionKind, acquaintanceId: string, won: boolean, horror = false, helperId?: string, tied = false): GameState {
-  if (kind === "command") return structuredClone(state);
   if (tied) return structuredClone(state);
   const result = {
     ...structuredClone(state),

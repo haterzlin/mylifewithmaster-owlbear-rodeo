@@ -399,7 +399,7 @@ async function createAcquaintance(servantId: string) {
   const name = formValue(`[data-new-acquaintance-name="${selectorValue(servantId)}"]`);
   if (!name) return;
   const acquaintance = { id: crypto.randomUUID(), name };
-  await updateState((current) => addAcquaintance(current, servantId, acquaintance));
+  await updateState((current) => addAcquaintance(current, acquaintance));
   render();
 }
 
