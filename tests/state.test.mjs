@@ -4,7 +4,6 @@ import {
   addAcquaintance,
   applyFinaleOutcome,
   applyActionOutcome,
-  attachAcquaintance,
   canEditServant,
   emptyState,
   epilogueOptions,
@@ -54,21 +53,17 @@ test("hráč upravuje jen vlastního služebníka, Vypravěč všechny", () => {
   assert.equal(canEditServant("GM", "player-2", servant), true);
 });
 
-test("nová známost se uloží a připojí služebníkovi", () => {
-  const state = { ...emptyState, servants: [{ ...servant }] };
+test("nová známost se uloží všem služebníkům s vlastní Láskou", () => {
+  const state = { ...emptyState, servants: [{ ...servant }, { ...servant, id: "servant-2", ownerId: "player-2" }] };
   const acquaintance = { id: "acq-1", name: "Mlynář" };
   const result = addAcquaintance(state, servant.id, acquaintance);
   assert.deepEqual(result.acquaintances, [acquaintance]);
-  assert.deepEqual(result.servants[0].acquaintances, [{ acquaintanceId: "acq-1", love: 0 }]);
+  assert.deepEqual(result.servants.map((item) => item.acquaintances), [[{ acquaintanceId: "acq-1", love: 0 }], [{ acquaintanceId: "acq-1", love: 0 }]]);
 });
 
-test("známost lze připojit více služebníkům, ale ne dvakrát stejnému", () => {
-  const state = { ...emptyState, servants: [{ ...servant }, { ...servant, id: "servant-2", ownerId: "player-2" }], acquaintances: [{ id: "acq-1", name: "Mlynář" }] };
-  const once = attachAcquaintance(state, "servant-1", "acq-1");
-  const twice = attachAcquaintance(once, "servant-1", "acq-1");
-  const other = attachAcquaintance(twice, "servant-2", "acq-1");
-  assert.equal(twice.servants[0].acquaintances.length, 1);
-  assert.equal(other.servants[1].acquaintances.length, 1);
+test("normalizace doplní každému služebníkovi všechny známosti", () => {
+  const state = normalizeState({ acquaintances: [{ id: "acq-1", name: "Mlynář" }], servants: [{ ...servant }] });
+  assert.deepEqual(state.servants[0].acquaintances, [{ acquaintanceId: "acq-1", love: 0 }]);
 });
 
 test("odstranění známosti smaže záznam i vazby všech služebníků", () => {

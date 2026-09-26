@@ -111,6 +111,7 @@ function acquaintanceCard(servant: Servant) {
       if (!acquaintance) return "";
       return `<tr><td>${escapeHtml(acquaintance.name)}</td><td><input class="love" type="number" min="0" value="${escapeHtml(String(link.love))}" data-love="${escapeHtml(servant.id)}" data-acquaintance="${escapeHtml(acquaintance.id)}" ${editable ? "" : "disabled"} /></td><td>${role === "GM" ? `<button class="remove-acquaintance" title="${t("Odebrat známost", "Remove acquaintance")}" data-remove-acquaintance="${escapeHtml(acquaintance.id)}">×</button>` : ""}</td></tr>`;
     }).join("")}${editable ? `<tr class="new-acquaintance"><td><input data-new-acquaintance-name="${escapeHtml(servant.id)}" placeholder="${t("Jméno nové známosti", "New acquaintance name")}" /></td><td></td><td><button data-create-acquaintance="${escapeHtml(servant.id)}" title="${t("Přidat známost", "Add acquaintance")}">+</button></td></tr>` : ""}</tbody></table>
+    ${editable ? `<button data-save-servant="${escapeHtml(servant.id)}">${t("Uložit změny", "Save changes")}</button>` : ""}
   </section>`;
 }
 
@@ -358,15 +359,14 @@ async function saveMaster() {
 }
 
 async function saveServant(id: string) {
-  const card = document.querySelector<HTMLElement>(`[data-save-servant="${selectorValue(id)}"]`)?.closest(".servant");
-  if (!card) return;
+  if (!document.querySelector(`[data-save-servant="${selectorValue(id)}"]`)) return;
   const servant = state.servants.find((item) => item.id === id);
   if (!servant || !canEditServant(role, playerId, servant)) return;
-  const value = (name: string) => card.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${selectorValue(name)}"]`)?.value.trim() ?? "";
+  const value = (name: string) => document.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${selectorValue(name)}"]`)?.value.trim() ?? "";
   const next = {
     name: value("name"), moreHuman: value("moreHuman"), lessHuman: value("lessHuman"),
     selfHatred: inputNumber(value("selfHatred")), fatigue: inputNumber(value("fatigue")),
-    acquaintances: servant.acquaintances.map((link) => ({ ...link, love: inputNumber(card.querySelector<HTMLInputElement>(`[data-love="${selectorValue(id)}"][data-acquaintance="${selectorValue(link.acquaintanceId)}"]`)?.value ?? "") })),
+    acquaintances: servant.acquaintances.map((link) => ({ ...link, love: inputNumber(document.querySelector<HTMLInputElement>(`[data-love="${selectorValue(id)}"][data-acquaintance="${selectorValue(link.acquaintanceId)}"]`)?.value ?? "") })),
   };
   await updateState((current) => ({ ...current,
     servants: current.servants.map((item) => item.id === id ? {
