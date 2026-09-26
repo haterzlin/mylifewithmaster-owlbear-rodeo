@@ -1,6 +1,6 @@
 import OBR from "@owlbear-rodeo/sdk";
 import "./style.css";
-import { addAcquaintance, applyActionOutcome, applyFinaleOutcome, attachAcquaintance as attachAcquaintanceState, canEditServant, emptyState, epilogueOptions, normalizeState, poolSize, removeAcquaintance as removeAcquaintanceState, rollDice } from "./state";
+import { addAcquaintance, applyActionOutcome, applyFinaleOutcome, canEditServant, emptyState, epilogueOptions, normalizeState, poolSize, removeAcquaintance as removeAcquaintanceState, rollDice } from "./state";
 import type { ActionKind, BonusKind, EpilogueKind, GameState, Servant } from "./state";
 
 const KEY = "com.mujzivotspanem/state";
@@ -104,15 +104,13 @@ function servantCard(servant: Servant) {
 function acquaintanceCard(servant: Servant) {
   const editable = role === "GM" || servant.ownerId === playerId;
   const linked = servant.acquaintances ?? [];
-  const linkedIds = new Set(linked.map((link) => link.acquaintanceId));
-  const available = state.acquaintances.filter((item) => !linkedIds.has(item.id));
+  const sortedLinked = [...linked].sort((a, b) => b.love - a.love);
   return `<section class="card acquaintances-section"><h2>${t("Známosti", "Acquaintances")}</h2>
-    <table class="acquaintances"><thead><tr><th>${t("Jméno", "Name")}</th><th>${t("Láska", "Love")}</th><th></th></tr></thead><tbody>${linked.map((link) => {
+    <table class="acquaintances"><thead><tr><th>${t("Jméno", "Name")}</th><th>${t("Láska", "Love")}</th><th></th></tr></thead><tbody>${sortedLinked.map((link) => {
       const acquaintance = state.acquaintances.find((item) => item.id === link.acquaintanceId);
       if (!acquaintance) return "";
       return `<tr><td>${escapeHtml(acquaintance.name)}</td><td><input class="love" type="number" min="0" value="${escapeHtml(String(link.love))}" data-love="${escapeHtml(servant.id)}" data-acquaintance="${escapeHtml(acquaintance.id)}" ${editable ? "" : "disabled"} /></td><td>${role === "GM" ? `<button class="remove-acquaintance" title="${t("Odebrat známost", "Remove acquaintance")}" data-remove-acquaintance="${escapeHtml(acquaintance.id)}">×</button>` : ""}</td></tr>`;
     }).join("")}${editable ? `<tr class="new-acquaintance"><td><input data-new-acquaintance-name="${escapeHtml(servant.id)}" placeholder="${t("Jméno nové známosti", "New acquaintance name")}" /></td><td></td><td><button data-create-acquaintance="${escapeHtml(servant.id)}" title="${t("Přidat známost", "Add acquaintance")}">+</button></td></tr>` : ""}</tbody></table>
-    ${editable && available.length ? `<label>${t("Připojit existující známost", "Attach existing acquaintance")}<select data-add-acquaintance="${escapeHtml(servant.id)}">${available.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join("")}</select></label><button data-attach-acquaintance="${escapeHtml(servant.id)}">${t("Připojit", "Attach")}</button>` : ""}
   </section>`;
 }
 
@@ -387,14 +385,6 @@ async function saveServant(id: string) {
   if (changes.length) await publish(() => `${servant.name || t("Služebník", "Servant")}: ${changes.map((change) => change[language]).join(", ")}.`);
 }
 
-async function attachAcquaintance(servantId: string) {
-  const servant = state.servants.find((item) => item.id === servantId);
-  if (!servant || !canEditServant(role, playerId, servant)) return;
-  const id = document.querySelector<HTMLSelectElement>(`[data-add-acquaintance="${selectorValue(servantId)}"]`)?.value;
-  if (!id || servant.acquaintances.some((link) => link.acquaintanceId === id)) return;
-  await updateState((current) => attachAcquaintanceState(current, servantId, id));
-}
-
 async function createAcquaintance(servantId: string) {
   const servant = state.servants.find((item) => item.id === servantId);
   if (!servant || !canEditServant(role, playerId, servant)) return;
@@ -418,7 +408,7 @@ async function createServant() {
   await updateState((current) => ({ ...current, servants: [...current.servants, {
     id: crypto.randomUUID(), name: "Nový služebník", ownerId: playerId,
     selfHatred: 2, fatigue: 1, moreHuman: "", lessHuman: "",
-    acquaintances: [],
+    acquaintances: state.acquaintances.map((item) => ({ acquaintanceId: item.id, love: 0 })),
   }] }));
 }
 
@@ -435,7 +425,6 @@ function bindEvents() {
     else void createServant();
   });
   document.querySelectorAll<HTMLElement>("[data-save-servant]").forEach((button) => button.addEventListener("click", () => void saveServant(button.dataset.saveServant!)));
-  document.querySelectorAll<HTMLElement>("[data-attach-acquaintance]").forEach((button) => button.addEventListener("click", () => void attachAcquaintance(button.dataset.attachAcquaintance!)));
   document.querySelectorAll<HTMLElement>("[data-create-acquaintance]").forEach((button) => button.addEventListener("click", () => void createAcquaintance(button.dataset.createAcquaintance!)));
   document.querySelectorAll<HTMLElement>("[data-remove-acquaintance]").forEach((button) => button.addEventListener("click", () => void deleteAcquaintance(button.dataset.removeAcquaintance!)));
   document.querySelectorAll<HTMLElement>("[data-run-action]").forEach((button) => button.addEventListener("click", () => void runAction(button.dataset.runAction!)));
