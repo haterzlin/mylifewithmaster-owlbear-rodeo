@@ -7,7 +7,7 @@
   "homepage_url": "https://github.com/haterzlin/mylifewithmaster-owlbear-rodeo/",
   "action": {
     "title": "My Life with Master",
-    "icon": "https://lubomir.mlich.cz/lifewithmymaster/dist/icon-generated.png",
+    "icon": "https://lubomir.mlich.cz/lifewithmymaster/dist/icon-puppet.png",
     "popover": "https://lubomir.mlich.cz/lifewithmymaster/dist/index.html",
     "width": 420,
     "height": 720
