@@ -57,10 +57,13 @@ integration tests are not included yet.
 - assistance, capture and escape, Horror Reveals, and the Endgame;
 - a separate Endgame panel with multiple helpers and separate bonuses for both sides;
 - automatic changes to Love, Self-Loathing, and Weariness after rolls;
-- a Game Log synchronized between players in the room;
+- a Game Log synchronized between connected players, keeping the 20 most recent entries locally;
 - data synchronization within an Owlbear Rodeo room;
 - support for Owlbear Rodeo's light and dark themes, including live theme changes;
 - switching between Czech and English; the language choice is saved in the browser.
+
+The Game Log is not stored in room metadata. It is an ephemeral session log
+sent to currently connected players through Owlbear Rodeo broadcast messages.
 
 ## Development status
 

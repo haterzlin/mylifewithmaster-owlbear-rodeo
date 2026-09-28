@@ -36,13 +36,14 @@ export const emptyState: GameState = {
 };
 
 const MAX_NUMBER = 100;
+const MAX_TEXT = 2_000;
 
 function record(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
 function text(value: unknown, fallback = "") {
-  return typeof value === "string" ? value.slice(0, 10_000) : fallback;
+  return typeof value === "string" ? value.slice(0, MAX_TEXT) : fallback;
 }
 
 function number(value: unknown, fallback = 0) {

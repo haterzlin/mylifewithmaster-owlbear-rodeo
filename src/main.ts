@@ -4,6 +4,7 @@ import { addAcquaintance, applyActionOutcome, applyFinaleOutcome, canEditServant
 import type { ActionKind, BonusKind, EpilogueKind, GameState, Servant } from "./state";
 
 const KEY = "com.mujzivotspanem/state";
+const MAX_METADATA_BYTES = 12_000;
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 let state = structuredClone(emptyState);
@@ -72,10 +73,10 @@ function render() {
 function masterCard() {
   return `<section class="card ${role === "GM" ? "" : "readonly"}">
       <h2>${t("Pán", "Master")}</h2>
-      <label>${t("Jméno", "Name")}<input id="master-name" value="${escapeHtml(state.master.name)}" ${role === "GM" ? "" : "disabled"} /></label>
-      <label>${t("Popis", "Description")}<textarea id="master-description" rows="7" ${role === "GM" ? "" : "disabled"}>${escapeHtml(state.master.description)}</textarea></label>
+      <label>${t("Jméno", "Name")}<input id="master-name" maxlength="100" value="${escapeHtml(state.master.name)}" ${role === "GM" ? "" : "disabled"} /></label>
+      <label>${t("Popis", "Description")}<textarea id="master-description" maxlength="2000" rows="7" ${role === "GM" ? "" : "disabled"}>${escapeHtml(state.master.description)}</textarea></label>
       <h2>${t("Sídlo a prostředí", "Lair and environment")}</h2>
-      <label><textarea id="environment" rows="6" ${role === "GM" ? "" : "disabled"}>${escapeHtml(state.environment)}</textarea></label>
+      <label><textarea id="environment" maxlength="2000" rows="6" ${role === "GM" ? "" : "disabled"}>${escapeHtml(state.environment)}</textarea></label>
       <div class="grid">${numberInput(t("Rozum", "Reason"), "master-reason", state.master.reason)}${numberInput(t("Strach", "Fear"), "master-fear", state.master.fear)}</div>
       ${role === "GM" ? `<button id="save-master">${t("Uložit Pána", "Save Master")}</button>` : ""}
     </section>${role === "GM" ? commandCard() : ""}`;
@@ -94,11 +95,11 @@ function feedCard() {
 function servantCard(servant: Servant) {
   const editable = role === "GM" || servant.ownerId === playerId;
   return `<article class="servant ${editable ? "" : "readonly"}">
-    ${editable ? `<label>${t("Jméno", "Name")}<input class="servant-name" name="name" value="${escapeHtml(servant.name)}" placeholder="${t("Jméno služebníka", "Servant name")}" /></label>` : `<h3>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</h3>`}
+    ${editable ? `<label>${t("Jméno", "Name")}<input class="servant-name" name="name" maxlength="100" value="${escapeHtml(servant.name)}" placeholder="${t("Jméno služebníka", "Servant name")}" /></label>` : `<h3>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</h3>`}
     ${servant.captured ? `<p class="notice">${t("Zajatý", "Captured")}</p>` : ""}${servant.horrorPending ? `<p class="notice">${t("Čeká Projev hrůzy", "Horror manifestation pending")}</p>` : ""}
     <div class="grid">${numberInput(t("Sebenenávist", "Self-hatred"), "selfHatred", servant.selfHatred).replace("<input", `<input ${editable ? "" : "disabled"}`)}${numberInput(t("Únava", "Fatigue"), "fatigue", servant.fatigue).replace("<input", `<input ${editable ? "" : "disabled"}`)}</div>
-    <label>${t("Více než lidský", "More than human")}<textarea name="moreHuman" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.moreHuman)}</textarea></label>
-    <label>${t("Méně než lidský", "Less than human")}<textarea name="lessHuman" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.lessHuman)}</textarea></label>
+    <label>${t("Více než lidský", "More than human")}<textarea name="moreHuman" maxlength="2000" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.moreHuman)}</textarea></label>
+    <label>${t("Méně než lidský", "Less than human")}<textarea name="lessHuman" maxlength="2000" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.lessHuman)}</textarea></label>
     ${editable ? `<button data-save-servant="${escapeHtml(servant.id)}">${t("Uložit služebníka", "Save servant")}</button>` : `<small class="muted">${t("Postava jiného hráče", "Another player's character")}</small>`}
   </article>${acquaintanceCard(servant)}${editable ? actionCard(servant) : ""}`;
 }
@@ -111,8 +112,8 @@ function acquaintanceCard(servant: Servant) {
     <table class="acquaintances"><thead><tr><th>${t("Jméno", "Name")}</th><th>${t("Láska", "Love")}</th><th></th></tr></thead><tbody>${sortedLinked.map((link) => {
       const acquaintance = state.acquaintances.find((item) => item.id === link.acquaintanceId);
       if (!acquaintance) return "";
-      return `<tr><td>${role === "GM" ? `<input class="acquaintance-name" value="${escapeHtml(acquaintance.name)}" data-acquaintance-name="${escapeHtml(acquaintance.id)}" />` : escapeHtml(acquaintance.name)}</td><td><input class="love" type="number" min="0" value="${escapeHtml(String(link.love))}" data-love="${escapeHtml(servant.id)}" data-acquaintance="${escapeHtml(acquaintance.id)}" ${editable ? "" : "disabled"} /></td><td>${role === "GM" ? `<button class="remove-acquaintance" title="${t("Odebrat známost", "Remove acquaintance")}" data-remove-acquaintance="${escapeHtml(acquaintance.id)}">×</button>` : ""}</td></tr>`;
-    }).join("")}${editable ? `<tr class="new-acquaintance"><td><input data-new-acquaintance-name="${escapeHtml(servant.id)}" placeholder="${t("Jméno nové známosti", "New acquaintance name")}" /></td><td></td><td><button data-create-acquaintance="${escapeHtml(servant.id)}" title="${t("Přidat známost", "Add acquaintance")}">+</button></td></tr>` : ""}</tbody></table>
+      return `<tr><td>${role === "GM" ? `<input class="acquaintance-name" maxlength="100" value="${escapeHtml(acquaintance.name)}" data-acquaintance-name="${escapeHtml(acquaintance.id)}" />` : escapeHtml(acquaintance.name)}</td><td><input class="love" type="number" min="0" value="${escapeHtml(String(link.love))}" data-love="${escapeHtml(servant.id)}" data-acquaintance="${escapeHtml(acquaintance.id)}" ${editable ? "" : "disabled"} /></td><td>${role === "GM" ? `<button class="remove-acquaintance" title="${t("Odebrat známost", "Remove acquaintance")}" data-remove-acquaintance="${escapeHtml(acquaintance.id)}">×</button>` : ""}</td></tr>`;
+    }).join("")}${editable ? `<tr class="new-acquaintance"><td><input maxlength="100" data-new-acquaintance-name="${escapeHtml(servant.id)}" placeholder="${t("Jméno nové známosti", "New acquaintance name")}" /></td><td></td><td><button data-create-acquaintance="${escapeHtml(servant.id)}" title="${t("Přidat známost", "Add acquaintance")}">+</button></td></tr>` : ""}</tbody></table>
     ${editable ? `<button data-save-servant="${escapeHtml(servant.id)}">${t("Uložit změny", "Save changes")}</button>` : ""}
   </section>`;
 }
@@ -155,12 +156,22 @@ function inputNumber(value: string) {
 }
 
 async function updateState(update: (current: GameState) => GameState) {
-  const metadata = await OBR.room.getMetadata();
-  const current = normalizeState(metadata[KEY] as Partial<GameState> | undefined);
-  const next = update(structuredClone(current));
-  await OBR.room.setMetadata({ [KEY]: next });
-  state = next;
-  return next;
+  try {
+    const metadata = await OBR.room.getMetadata();
+    const current = normalizeState(metadata[KEY] as Partial<GameState> | undefined);
+    const next = update(structuredClone(current));
+    if (new TextEncoder().encode(JSON.stringify(next)).byteLength > MAX_METADATA_BYTES) {
+      window.alert(t("Stav hry je příliš velký. Zkrať některý z popisů.", "The game state is too large. Shorten one of the descriptions."));
+      return null;
+    }
+    await OBR.room.setMetadata({ [KEY]: next });
+    state = next;
+    return next;
+  } catch (error) {
+    console.error("Failed to save room state", error);
+    window.alert(t("Změny se nepodařilo uložit.", "The changes could not be saved."));
+    return null;
+  }
 }
 
 async function publish(build: () => string) {
@@ -264,6 +275,7 @@ async function runAction(servantId: string) {
     updated = { ...updated, servants: updated.servants.map((item) => item.id === servantId && item.fatigue > updated.master.reason ? { ...item, captured: true } : item) };
     return updated;
   });
+  if (!next) return;
   const captured = Boolean(next.servants.find((item) => item.id === servantId)?.captured);
   const translateRule = (rule: string) => ({
     "Strach + Sebenenávist": t("Strach + Sebenenávist", "Fear + Self-hatred"),
@@ -303,7 +315,7 @@ async function runCommand() {
   const won = masterRoll.total > servantRoll.total;
   const finale = !tied && !won && totalLove(servant) > state.master.fear + servant.fatigue;
   if (finale) {
-    await updateState((current) => ({ ...current, finaleServantId: servant.id }));
+    if (!await updateState((current) => ({ ...current, finaleServantId: servant.id }))) return;
   }
   await publish(() => {
     const consequence = tied ? t("Remíza, příkaz je přerušen", "Tie, the command is interrupted") : finale ? `${servant.name} ${t("se vzepřel Pánovi – začíná Finále", "defied the Master – Finale begins")}` : won ? `${servant.name} ${t("musí uposlechnout Pánův příkaz", "must obey the Master's command")}` : `${servant.name} ${t("se příkazu vzepřel", "defied the command")}${t(", Finále nezačalo, protože služebník má příliš nízkou Lásku", ", Finale did not start because the servant's Love is too low")}`;
@@ -314,14 +326,14 @@ async function runCommand() {
 async function escapeCaptivity(id: string) {
   const servant = state.servants.find((item) => item.id === id);
   if (!servant?.captured || !canEditServant(role, playerId, servant)) return;
-  await updateState((current) => ({ ...current, servants: current.servants.map((item) => item.id === id ? { ...item, captured: false } : item) }));
+  if (!await updateState((current) => ({ ...current, servants: current.servants.map((item) => item.id === id ? { ...item, captured: false } : item) }))) return;
   await publish(() => `${servant.name} ${t("se vymanil ze zajetí.", "escaped captivity.")}`);
 }
 
 async function clearHorror(id: string) {
   const servant = state.servants.find((item) => item.id === id);
   if (!servant?.horrorPending || !canEditServant(role, playerId, servant)) return;
-  await updateState((current) => ({ ...current, servants: current.servants.map((item) => item.id === id ? { ...item, horrorPending: false } : item) }));
+  if (!await updateState((current) => ({ ...current, servants: current.servants.map((item) => item.id === id ? { ...item, horrorPending: false } : item) }))) return;
   await publish(() => `${servant.name} ${t("dokončil Projev hrůzy a vrací se do hry.", "completed the Horror manifestation and returns to play.")}`);
 }
 
@@ -342,7 +354,7 @@ async function runFinale(id: string) {
   const masterRoll = rollPool(poolSize(state.master.fear + servant.selfHatred), masterBonus);
   const tied = servantRoll.total === masterRoll.total;
   const won = servantRoll.total > masterRoll.total;
-  await updateState((current) => applyFinaleOutcome(current, id, won, tied, helperIds));
+  if (!await updateState((current) => applyFinaleOutcome(current, id, won, tied, helperIds))) return;
   if (won) { finaleCompleted = true; view = null; }
   await publish(() => {
     const helperText = helpers.length ? ` + ${t("pomoc", "help")} ${helpers.map((helper) => helper.name).join(", ")}` : "";
@@ -352,10 +364,10 @@ async function runFinale(id: string) {
 
 async function saveMaster() {
   if (role !== "GM") return;
-  await updateState((current) => ({ ...current, master: {
+  if (!await updateState((current) => ({ ...current, master: {
     name: formValue("#master-name"), description: formValue("#master-description"),
     reason: inputNumber(formValue('[name="master-reason"]')), fear: inputNumber(formValue('[name="master-fear"]')),
-  }, environment: formValue("#environment") }));
+  }, environment: formValue("#environment") }))) return;
 }
 
 async function saveServant(id: string) {
@@ -372,11 +384,11 @@ async function saveServant(id: string) {
     ...item,
     name: formValue(`[data-acquaintance-name="${selectorValue(item.id)}"]`) || item.name,
   })) : state.acquaintances;
-  await updateState((current) => ({ ...current,
+  if (!await updateState((current) => ({
+    ...current,
     acquaintances: acquaintanceNames,
-    servants: current.servants.map((item) => item.id === id ? {
-    ...item, ...next,
-  } : item) }));
+    servants: current.servants.map((item) => item.id === id ? { ...item, ...next } : item),
+  }))) return;
   const changes: FeedEntry[] = [];
   if (servant.selfHatred !== next.selfHatred) changes.push({ cs: `Sebenenávist ${servant.selfHatred} → ${next.selfHatred}`, en: `Self-hatred ${servant.selfHatred} → ${next.selfHatred}` });
   if (servant.fatigue !== next.fatigue) changes.push({ cs: `Únava ${servant.fatigue} → ${next.fatigue}`, en: `Fatigue ${servant.fatigue} → ${next.fatigue}` });
@@ -399,7 +411,7 @@ async function createAcquaintance(servantId: string) {
   const name = formValue(`[data-new-acquaintance-name="${selectorValue(servantId)}"]`);
   if (!name) return;
   const acquaintance = { id: crypto.randomUUID(), name };
-  await updateState((current) => addAcquaintance(current, acquaintance));
+  if (!await updateState((current) => addAcquaintance(current, acquaintance))) return;
   render();
 }
 
@@ -407,7 +419,7 @@ async function deleteAcquaintance(id: string) {
   if (role !== "GM") return;
   const acquaintance = state.acquaintances.find((item) => item.id === id);
   if (!acquaintance || !window.confirm(`Opravdu odstranit známost „${acquaintance.name}“ u všech služebníků?`)) return;
-  await updateState((current) => removeAcquaintanceState(current, id));
+  if (!await updateState((current) => removeAcquaintanceState(current, id))) return;
   await publish(() => `${t("Známost", "Acquaintance")} ${acquaintance.name} ${t("byla odstraněna.", "was deleted.")}`);
 }
 

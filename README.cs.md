@@ -56,10 +56,13 @@ zatím nejsou součástí projektu.
 - vzájemná výpomoc, zajetí a vymanění, Projevy hrůzy a Finále;
 - samostatný panel Finále s více pomocníky a oddělenými bonusy obou stran;
 - automatické změny Lásky, Sebenenávisti a Únavy po hodech;
-- Záznam hry synchronizovaný mezi hráči v místnosti;
+- Záznam hry synchronizovaný mezi připojenými hráči s posledními 20 položkami;
 - synchronizace dat v rámci místnosti Owlbear Rodeo.
 - přebírání světlého/tmavého motivu Owlbear Rodeo včetně jeho změn za běhu.
 - přepínání mezi českou a anglickou verzí; volba jazyka se uloží v prohlížeči.
+
+Záznam hry se neukládá do metadat místnosti. Je pouze dočasný a posílá se
+aktuálně připojeným hráčům pomocí broadcast zpráv Owlbear Rodeo.
 
 ## Stav vývoje
 
