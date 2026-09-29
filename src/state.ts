@@ -179,9 +179,12 @@ export function applyActionOutcome(state: GameState, servantId: string, kind: Ac
   };
   if (helperId && !won) {
     result.servants = result.servants.map((servant) => servant.id === helperId
-      ? { ...servant, selfHatred: servant.selfHatred + (kind === "violence" ? 0 : 1), fatigue: servant.fatigue + (kind === "violence" ? 1 : 0) }
+      ? { ...servant, selfHatred: servant.selfHatred + (kind === "approach" ? 1 : 0), fatigue: servant.fatigue + (kind === "violence" ? 1 : 0) }
       : servant);
   }
+  result.servants = result.servants.map((servant) => (servant.id === servantId || servant.id === helperId) && servant.fatigue > result.master.reason
+    ? { ...servant, captured: true }
+    : servant);
   return result;
 }
 

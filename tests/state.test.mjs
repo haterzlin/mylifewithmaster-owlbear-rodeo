@@ -154,6 +154,22 @@ test("neúspěšná akce zvýší následky pomocníkovi", () => {
   assert.equal(result.servants[1].selfHatred, helper.selfHatred);
 });
 
+test("pomocník při zlotřilosti ani při úspěchu nepřidá nesprávný následek", () => {
+  const helper = { ...servant, id: "helper-1", selfHatred: 2, fatigue: 2 };
+  const state = { ...emptyState, servants: [{ ...servant }, helper] };
+  const result = applyActionOutcome(state, servant.id, "villainy", "npc", false, false, helper.id);
+  assert.equal(result.servants[1].selfHatred, helper.selfHatred);
+  assert.equal(result.servants[1].fatigue, helper.fatigue);
+});
+
+test("neúspěšné násilí může uvrhnout pomocníka do zajetí", () => {
+  const helper = { ...servant, id: "helper-1", fatigue: 2 };
+  const state = { ...emptyState, master: { ...emptyState.master, reason: 2 }, servants: [{ ...servant }, helper] };
+  const result = applyActionOutcome(state, servant.id, "violence", "npc", false, false, helper.id);
+  assert.equal(result.servants[1].fatigue, 3);
+  assert.equal(result.servants[1].captured, true);
+});
+
 test("remíza ve Finále nezvýší Únavu a Finále pokračuje", () => {
   const state = { ...emptyState, finaleServantId: servant.id, servants: [{ ...servant, fatigue: 2 }] };
   const result = applyFinaleOutcome(state, servant.id, false, true);

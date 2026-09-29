@@ -273,7 +273,6 @@ async function runAction(servantId: string) {
   const horror = !tied && predictedSelfHatred > totalLove(servant) + state.master.reason;
   const next = await updateState((current) => {
     let updated = applyActionOutcome(current, servantId, kind, targetId, won, horror, helperId, tied);
-    updated = { ...updated, servants: updated.servants.map((item) => item.id === servantId && item.fatigue > updated.master.reason ? { ...item, captured: true } : item) };
     return updated;
   });
   if (!next) return;
