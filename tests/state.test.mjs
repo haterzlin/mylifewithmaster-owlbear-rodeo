@@ -66,15 +66,15 @@ test("Lásku může ručně upravovat jen Vypravěč", () => {
 
 test("nová známost se uloží všem služebníkům s vlastní Láskou", () => {
   const state = { ...emptyState, servants: [{ ...servant }, { ...servant, id: "servant-2", ownerId: "player-2" }] };
-  const acquaintance = { id: "acq-1", name: "Mlynář", description: "Švec z vesnice" };
+  const acquaintance = { id: "acq-1", name: "Mlynář" };
   const result = addAcquaintance(state, acquaintance);
   assert.deepEqual(result.acquaintances, [acquaintance]);
-  assert.deepEqual(result.servants.map((item) => item.acquaintances), [[{ acquaintanceId: "acq-1", love: 0 }], [{ acquaintanceId: "acq-1", love: 0 }]]);
+  assert.deepEqual(result.servants.map((item) => item.acquaintances), [[{ acquaintanceId: "acq-1", love: 0, description: "" }], [{ acquaintanceId: "acq-1", love: 0, description: "" }]]);
 });
 
 test("normalizace doplní každému služebníkovi všechny známosti", () => {
   const state = normalizeState({ acquaintances: [{ id: "acq-1", name: "Mlynář" }], servants: [{ ...servant }] });
-  assert.deepEqual(state.servants[0].acquaintances, [{ acquaintanceId: "acq-1", love: 0 }]);
+  assert.deepEqual(state.servants[0].acquaintances, [{ acquaintanceId: "acq-1", love: 0, description: "" }]);
 });
 
 test("normalizace zachová Lásku a doplní jen chybějící známosti", () => {
@@ -83,9 +83,21 @@ test("normalizace zachová Lásku a doplní jen chybějící známosti", () => {
     servants: [{ ...servant, acquaintances: [{ acquaintanceId: "acq-1", love: 3 }] }],
   });
   assert.deepEqual(state.servants[0].acquaintances, [
-    { acquaintanceId: "acq-1", love: 3 },
-    { acquaintanceId: "acq-2", love: 0 },
+    { acquaintanceId: "acq-1", love: 3, description: "" },
+    { acquaintanceId: "acq-2", love: 0, description: "" },
   ]);
+});
+
+test("stejná známost má u každého služebníka vlastní popis", () => {
+  const state = normalizeState({
+    acquaintances: [{ id: "acq-1", name: "Mlynář" }],
+    servants: [
+      { ...servant, acquaintances: [{ acquaintanceId: "acq-1", love: 1, description: "Připomíná mi otce." }] },
+      { ...servant, id: "servant-2", acquaintances: [{ acquaintanceId: "acq-1", love: 2, description: "Obdivuji její odvahu." }] },
+    ],
+  });
+  assert.equal(state.servants[0].acquaintances[0].description, "Připomíná mi otce.");
+  assert.equal(state.servants[1].acquaintances[0].description, "Obdivuji její odvahu.");
 });
 
 test("odstranění známosti smaže záznam i vazby všech služebníků", () => {

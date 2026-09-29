@@ -9,12 +9,12 @@ export type Servant = {
   moreHuman: string;
   lessHuman: string;
   background: string;
-  acquaintances: { acquaintanceId: string; love: number }[];
+  acquaintances: { acquaintanceId: string; love: number; description: string }[];
   captured?: boolean;
   horrorPending?: boolean;
 };
 
-export type Acquaintance = { id: string; name: string; description: string };
+export type Acquaintance = { id: string; name: string };
 
 export type GameState = {
   master: { name: string; description: string; reason: number; fear: number };
@@ -64,19 +64,18 @@ export function normalizeState(value: Partial<GameState> | undefined): GameState
     return {
       id: id(acquaintance.id, `acquaintance-${index}`),
       name: text(acquaintance.name),
-      description: text(acquaintance.description),
     };
   }) : [];
   const servants = Array.isArray(source.servants) ? source.servants.filter((item) => Object.values(record(item)).length > 0).map((item, index) => {
     const servant = record(item);
     const links = Array.isArray(servant.acquaintances) ? servant.acquaintances.filter((link) => Object.values(record(link)).length > 0).map((link) => {
       const acquaintance = record(link);
-      return { acquaintanceId: id(acquaintance.acquaintanceId, ""), love: number(acquaintance.love) };
+      return { acquaintanceId: id(acquaintance.acquaintanceId, ""), love: number(acquaintance.love), description: text(acquaintance.description) };
     }).filter((link) => link.acquaintanceId) : [];
     const knownIds = new Set(links.map((link) => link.acquaintanceId));
     const completeLinks = [...links, ...acquaintances
       .filter((item) => !knownIds.has(item.id))
-      .map((item) => ({ acquaintanceId: item.id, love: 0 }))];
+      .map((item) => ({ acquaintanceId: item.id, love: 0, description: "" }))];
     return {
       id: id(servant.id, `servant-${index}`),
       name: text(servant.name),
@@ -119,7 +118,7 @@ export function addAcquaintance(state: GameState, acquaintance: Acquaintance): G
     acquaintances: [...state.acquaintances, acquaintance],
     servants: state.servants.map((servant) => ({
       ...servant,
-      acquaintances: [...servant.acquaintances, { acquaintanceId: acquaintance.id, love: 0 }],
+      acquaintances: [...servant.acquaintances, { acquaintanceId: acquaintance.id, love: 0, description: "" }],
     })),
   };
 }
