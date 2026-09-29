@@ -106,6 +106,10 @@ export function canEditServant(role: Role, playerId: string, servant: Servant) {
   return role === "GM" || servant.ownerId === playerId;
 }
 
+export function canEditLove(role: Role) {
+  return role === "GM";
+}
+
 export function addAcquaintance(state: GameState, acquaintance: Acquaintance): GameState {
   return {
     ...structuredClone(state),

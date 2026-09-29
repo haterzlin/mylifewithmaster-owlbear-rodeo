@@ -4,6 +4,7 @@ import {
   addAcquaintance,
   applyFinaleOutcome,
   applyActionOutcome,
+  canEditLove,
   canEditServant,
   emptyState,
   epilogueOptions,
@@ -51,6 +52,11 @@ test("hráč upravuje jen vlastního služebníka, Vypravěč všechny", () => {
   assert.equal(canEditServant("PLAYER", "player-1", servant), true);
   assert.equal(canEditServant("PLAYER", "player-2", servant), false);
   assert.equal(canEditServant("GM", "player-2", servant), true);
+});
+
+test("Lásku může ručně upravovat jen Vypravěč", () => {
+  assert.equal(canEditLove("PLAYER"), false);
+  assert.equal(canEditLove("GM"), true);
 });
 
 test("nová známost se uloží všem služebníkům s vlastní Láskou", () => {

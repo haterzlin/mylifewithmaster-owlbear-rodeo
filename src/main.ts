@@ -1,6 +1,6 @@
 import OBR from "@owlbear-rodeo/sdk";
 import "./style.css";
-import { addAcquaintance, applyActionOutcome, applyFinaleOutcome, canEditServant, emptyState, epilogueOptions, normalizeState, poolSize, removeAcquaintance as removeAcquaintanceState, rollDice } from "./state";
+import { addAcquaintance, applyActionOutcome, applyFinaleOutcome, canEditLove, canEditServant, emptyState, epilogueOptions, normalizeState, poolSize, removeAcquaintance as removeAcquaintanceState, rollDice } from "./state";
 import type { ActionKind, BonusKind, EpilogueKind, GameState, Servant } from "./state";
 
 const KEY = "com.mujzivotspanem/state";
@@ -106,13 +106,14 @@ function servantCard(servant: Servant) {
 
 function acquaintanceCard(servant: Servant) {
   const editable = role === "GM" || servant.ownerId === playerId;
+  const loveEditable = canEditLove(role);
   const linked = servant.acquaintances ?? [];
   const sortedLinked = [...linked].sort((a, b) => b.love - a.love);
   return `<section class="card acquaintances-section"><h2>${t("Známosti", "Acquaintances")}</h2>
     <table class="acquaintances"><thead><tr><th>${t("Jméno", "Name")}</th><th>${t("Láska", "Love")}</th><th></th></tr></thead><tbody>${sortedLinked.map((link) => {
       const acquaintance = state.acquaintances.find((item) => item.id === link.acquaintanceId);
       if (!acquaintance) return "";
-      return `<tr><td>${role === "GM" ? `<input class="acquaintance-name" maxlength="100" value="${escapeHtml(acquaintance.name)}" data-acquaintance-name="${escapeHtml(acquaintance.id)}" />` : escapeHtml(acquaintance.name)}</td><td><input class="love" type="number" min="0" value="${escapeHtml(String(link.love))}" data-love="${escapeHtml(servant.id)}" data-acquaintance="${escapeHtml(acquaintance.id)}" ${editable ? "" : "disabled"} /></td><td>${role === "GM" ? `<button class="remove-acquaintance" title="${t("Odebrat známost", "Remove acquaintance")}" data-remove-acquaintance="${escapeHtml(acquaintance.id)}">×</button>` : ""}</td></tr>`;
+      return `<tr><td>${role === "GM" ? `<input class="acquaintance-name" maxlength="100" value="${escapeHtml(acquaintance.name)}" data-acquaintance-name="${escapeHtml(acquaintance.id)}" />` : escapeHtml(acquaintance.name)}</td><td><input class="love" type="number" min="0" value="${escapeHtml(String(link.love))}" data-love="${escapeHtml(servant.id)}" data-acquaintance="${escapeHtml(acquaintance.id)}" ${loveEditable ? "" : "disabled"} /></td><td>${role === "GM" ? `<button class="remove-acquaintance" title="${t("Odebrat známost", "Remove acquaintance")}" data-remove-acquaintance="${escapeHtml(acquaintance.id)}">×</button>` : ""}</td></tr>`;
     }).join("")}${editable ? `<tr class="new-acquaintance"><td><input maxlength="100" data-new-acquaintance-name="${escapeHtml(servant.id)}" placeholder="${t("Jméno nové známosti", "New acquaintance name")}" /></td><td></td><td><button data-create-acquaintance="${escapeHtml(servant.id)}" title="${t("Přidat známost", "Add acquaintance")}">+</button></td></tr>` : ""}</tbody></table>
     ${editable ? `<button data-save-servant="${escapeHtml(servant.id)}">${t("Uložit změny", "Save changes")}</button>` : ""}
   </section>`;
@@ -378,7 +379,7 @@ async function saveServant(id: string) {
   const next = {
     name: value("name"), moreHuman: value("moreHuman"), lessHuman: value("lessHuman"),
     selfHatred: inputNumber(value("selfHatred")), fatigue: inputNumber(value("fatigue")),
-    acquaintances: servant.acquaintances.map((link) => ({ ...link, love: inputNumber(document.querySelector<HTMLInputElement>(`[data-love="${selectorValue(id)}"][data-acquaintance="${selectorValue(link.acquaintanceId)}"]`)?.value ?? "") })),
+    acquaintances: servant.acquaintances.map((link) => ({ ...link, love: canEditLove(role) ? inputNumber(document.querySelector<HTMLInputElement>(`[data-love="${selectorValue(id)}"][data-acquaintance="${selectorValue(link.acquaintanceId)}"]`)?.value ?? "") : link.love })),
   };
   const acquaintanceNames = role === "GM" ? state.acquaintances.map((item) => ({
     ...item,
