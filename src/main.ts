@@ -54,7 +54,7 @@ function render() {
   const viewingServantId = view?.kind === "servant" ? view.id : view?.kind === "finale" ? view.servantId : undefined;
   if (viewingServantId && !state.servants.some((servant) => servant.id === viewingServantId)) view = null;
   if (view?.kind === "finale" && state.finaleServantId !== view.servantId) view = null;
-  const header = `<header><div><h1>${t("Můj život s Pánem", "My Life with Master")}</h1><small>${t("Režim", "Role")}: ${role === "GM" ? t("Vypravěč", "Game Master") : t("Hráč", "Player")}</small></div><div class="header-actions">${view ? `<button id="back-to-characters">${t("← Zpět na seznam postav", "← Back to characters")}</button>` : ""}<button id="toggle-language" title="${t("Přepnout do angličtiny", "Switch to Czech")}">${language === "cs" ? "EN" : "CS"}</button></div></header>`;
+  const header = `<header><div><h1>${t("Můj život s Pánem", "My Life with Master")}</h1><small>${t("Režim", "Role")}: ${role === "GM" ? t("Vypravěč", "Game Master") : t("Hráč", "Player")}</small></div><div class="header-actions">${view ? `<button id="back-to-characters">${t("← Zpět na seznam postav", "← Back to characters")}</button>` : ""}<button id="toggle-language" title="${t("Přepnout do angličtiny", "Switch to Czech")}">${language === "cs" ? "CS" : "EN"}</button></div></header>`;
   if (!view) {
     app.innerHTML = `${header}
       <section class="card"><div class="section-title"><h2>${t("Postavy", "Characters")}</h2>${own ? "" : `<button id="new-servant">${t("Vytvořit postavu", "Create character")}</button>`}</div>
