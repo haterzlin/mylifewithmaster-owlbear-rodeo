@@ -8,6 +8,7 @@ export type Servant = {
   fatigue: number;
   moreHuman: string;
   lessHuman: string;
+  background: string;
   acquaintances: { acquaintanceId: string; love: number }[];
   captured?: boolean;
   horrorPending?: boolean;
@@ -83,6 +84,7 @@ export function normalizeState(value: Partial<GameState> | undefined): GameState
       fatigue: number(servant.fatigue),
       moreHuman: text(servant.moreHuman),
       lessHuman: text(servant.lessHuman),
+      background: text(servant.background),
       acquaintances: completeLinks,
       captured: servant.captured === true,
       horrorPending: servant.horrorPending === true,

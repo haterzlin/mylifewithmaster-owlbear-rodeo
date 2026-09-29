@@ -48,6 +48,11 @@ test("normalizace odmítne poškozené typy a omezí čísla", () => {
   assert.deepEqual(state.acquaintances, []);
 });
 
+test("normalizace doplní Pozadí služebníka", () => {
+  assert.equal(normalizeState({ servants: [{ ...servant, background: "Dříve žil ve městě." }] }).servants[0].background, "Dříve žil ve městě.");
+  assert.equal(normalizeState({ servants: [{ ...servant }] }).servants[0].background, "");
+});
+
 test("hráč upravuje jen vlastního služebníka, Vypravěč všechny", () => {
   assert.equal(canEditServant("PLAYER", "player-1", servant), true);
   assert.equal(canEditServant("PLAYER", "player-2", servant), false);

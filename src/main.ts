@@ -96,6 +96,7 @@ function servantCard(servant: Servant) {
   const editable = role === "GM" || servant.ownerId === playerId;
   return `<article class="servant ${editable ? "" : "readonly"}">
     ${editable ? `<label>${t("Jméno", "Name")}<input class="servant-name" name="name" maxlength="100" value="${escapeHtml(servant.name)}" placeholder="${t("Jméno služebníka", "Servant name")}" /></label>` : `<h3>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</h3>`}
+    <label>${t("Pozadí", "Background")}<textarea name="background" maxlength="2000" rows="4" ${editable ? "" : "disabled"}>${escapeHtml(servant.background)}</textarea></label>
     ${servant.captured ? `<p class="notice">${t("Zajatý", "Captured")}</p>` : ""}${servant.horrorPending ? `<p class="notice">${t("Čeká Projev hrůzy", "Horror manifestation pending")}</p>` : ""}
     <div class="grid">${numberInput(t("Sebenenávist", "Self-hatred"), "selfHatred", servant.selfHatred).replace("<input", `<input ${editable ? "" : "disabled"}`)}${numberInput(t("Únava", "Fatigue"), "fatigue", servant.fatigue).replace("<input", `<input ${editable ? "" : "disabled"}`)}</div>
     <label>${t("Více než lidský", "More than human")}<textarea name="moreHuman" maxlength="2000" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.moreHuman)}</textarea></label>
@@ -376,7 +377,7 @@ async function saveServant(id: string) {
   if (!servant || !canEditServant(role, playerId, servant)) return;
   const value = (name: string) => document.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${selectorValue(name)}"]`)?.value.trim() ?? "";
   const next = {
-    name: value("name"), moreHuman: value("moreHuman"), lessHuman: value("lessHuman"),
+    name: value("name"), background: value("background"), moreHuman: value("moreHuman"), lessHuman: value("lessHuman"),
     selfHatred: inputNumber(value("selfHatred")), fatigue: inputNumber(value("fatigue")),
     acquaintances: servant.acquaintances.map((link) => ({ ...link, love: canEditLove(role) ? inputNumber(document.querySelector<HTMLInputElement>(`[data-love="${selectorValue(id)}"][data-acquaintance="${selectorValue(link.acquaintanceId)}"]`)?.value ?? "") : link.love })),
   };
@@ -402,6 +403,7 @@ async function saveServant(id: string) {
   });
   if (servant.moreHuman !== next.moreHuman) changes.push({ cs: "změnil popis Více než lidský", en: "changed the More than human description" });
   if (servant.lessHuman !== next.lessHuman) changes.push({ cs: "změnil popis Méně než lidský", en: "changed the Less than human description" });
+  if (servant.background !== next.background) changes.push({ cs: "změnil Pozadí", en: "changed the Background" });
   if (changes.length) await publish(() => `${servant.name || t("Služebník", "Servant")}: ${changes.map((change) => change[language]).join(", ")}.`);
 }
 
@@ -427,7 +429,7 @@ async function createServant() {
   if (state.servants.some((servant) => servant.ownerId === playerId) && role !== "GM") return;
   await updateState((current) => ({ ...current, servants: [...current.servants, {
     id: crypto.randomUUID(), name: "Nový služebník", ownerId: playerId,
-    selfHatred: 2, fatigue: 1, moreHuman: "", lessHuman: "",
+    selfHatred: 2, fatigue: 1, moreHuman: "", lessHuman: "", background: "",
     acquaintances: state.acquaintances.map((item) => ({ acquaintanceId: item.id, love: 0 })),
   }] }));
 }
