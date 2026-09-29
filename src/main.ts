@@ -57,9 +57,10 @@ function render() {
   const header = `<header><div><h1>${t("Můj život s Pánem", "My Life with Master")}</h1><small>${t("Režim", "Role")}: ${role === "GM" ? t("Vypravěč", "Game Master") : t("Hráč", "Player")}</small></div><div class="header-actions">${view ? `<button id="back-to-characters">${t("← Zpět na seznam postav", "← Back to characters")}</button>` : ""}<button id="toggle-language" title="${t("Přepnout do angličtiny", "Switch to Czech")}">${language === "cs" ? "CS" : "EN"}</button></div></header>`;
   if (!view) {
     app.innerHTML = `${header}
-      <section class="card"><div class="section-title"><h2>${t("Postavy", "Characters")}</h2>${own ? "" : `<button id="new-servant">${t("Vytvořit postavu", "Create character")}</button>`}</div>
-        <div class="character-list"><button class="character" data-open-master><strong>${t("Pán", "Master")}</strong><span>${escapeHtml(state.master.name || t("Bezejmenný Pán", "Unnamed Master"))}</span></button>
-        ${state.servants.map((servant) => `<button class="character" data-open-servant="${escapeHtml(servant.id)}"><strong>${t("Služebník", "Servant")}</strong><span>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</span></button>`).join("") || `<p class=muted>${t("Zatím není vytvořen žádný služebník.", "No servant has been created yet.")}</p>`}</div>
+      <section class="card"><div class="section-title"><h2>${t("Pán", "Master")}</h2>${own ? "" : `<button id="new-servant">${t("Vytvořit postavu", "Create character")}</button>`}</div>
+        <div class="character-list"><button class="character" data-open-master><span>${escapeHtml(state.master.name || t("Bezejmenný Pán", "Unnamed Master"))}</span></button></div>
+        <h3>${t("Služebníci", "Servants")}</h3>
+        <div class="character-list">${state.servants.map((servant) => `<button class="character" data-open-servant="${escapeHtml(servant.id)}"><span>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</span></button>`).join("") || `<p class=muted>${t("Zatím není vytvořen žádný služebník.", "No servant has been created yet.")}</p>`}</div>
       </section>${finaleCompleted ? epilogueCard() : ""}${feedCard()}`;
     bindEvents();
     return;
