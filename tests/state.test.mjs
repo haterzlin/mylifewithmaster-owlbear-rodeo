@@ -66,7 +66,7 @@ test("Lásku může ručně upravovat jen Vypravěč", () => {
 
 test("nová známost se uloží všem služebníkům s vlastní Láskou", () => {
   const state = { ...emptyState, servants: [{ ...servant }, { ...servant, id: "servant-2", ownerId: "player-2" }] };
-  const acquaintance = { id: "acq-1", name: "Mlynář" };
+  const acquaintance = { id: "acq-1", name: "Mlynář", description: "Švec z vesnice" };
   const result = addAcquaintance(state, acquaintance);
   assert.deepEqual(result.acquaintances, [acquaintance]);
   assert.deepEqual(result.servants.map((item) => item.acquaintances), [[{ acquaintanceId: "acq-1", love: 0 }], [{ acquaintanceId: "acq-1", love: 0 }]]);
