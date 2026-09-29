@@ -138,7 +138,7 @@ function actionCard(servant: Servant) {
   const targets = state.servants.filter((item) => item.id !== servant.id).map((item) => `<option value="servant:${escapeHtml(item.id)}">${escapeHtml(item.name || t("Bezejmenný služebník", "Unnamed servant"))}</option>`).join("");
   const acquaintances = servant.acquaintances.map((link) => state.acquaintances.find((item) => item.id === link.acquaintanceId)).filter(Boolean).map((item) => `<option value="acquaintance:${escapeHtml(item!.id)}">${escapeHtml(item!.name)}</option>`).join("");
   const helpers = state.servants.filter((item) => item.id !== servant.id).map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name || t("Bezejmenný služebník", "Unnamed servant"))}</option>`).join("");
-  return `<section class="card action-box"><h2>${t("Herní akce", "Game actions")}</h2><select data-action-kind="${escapeHtml(servant.id)}"><option value="violence">${t("Násilí", "Violence")}</option><option value="villainy">${t("Zlotřilost", "Villainy")}</option><option value="approach">${t("Sbližování", "Approach")}</option></select><select data-action-target="${escapeHtml(servant.id)}"><option value="npc">${t("Vesničané / cizinci", "Villagers / strangers")}</option>${targets}${acquaintances}</select><select data-action-bonus="${escapeHtml(servant.id)}"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</option></select><select data-action-helper="${escapeHtml(servant.id)}"><option value="">${t("Bez pomoci", "No help")}</option>${helpers}</select><button data-run-action="${escapeHtml(servant.id)}">${t("Hodit", "Roll")}</button>${servant.captured ? `<button data-escape="${escapeHtml(servant.id)}">${t("Vymanění ze zajetí", "Escape captivity")}</button>` : ""}${servant.horrorPending ? `<button data-clear-horror="${escapeHtml(servant.id)}">${t("Dokončit Projev hrůzy", "Complete horror manifestation")}</button>` : ""}</section>`;
+  return `<section class="card action-box"><h2>${t("Herní akce", "Game actions")}</h2><select data-action-kind="${escapeHtml(servant.id)}"><option value="violence">${t("Násilí", "Violence")}</option><option value="villainy">${t("Zlotřilost", "Villainy")}</option><option value="approach">${t("Sbližování", "Approach")}</option></select><select data-action-target="${escapeHtml(servant.id)}"><option value="npc">${t("Vesničané / cizinci", "Villagers / strangers")}</option>${targets}${acquaintances}</select><select data-action-bonus="${escapeHtml(servant.id)}"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</option></select><select data-action-helper="${escapeHtml(servant.id)}"><option value="">${t("Bez pomoci", "No help")}</option>${helpers}</select><button data-run-action="${escapeHtml(servant.id)}">${t("Hodit", "Roll")}</button>${servant.horrorPending ? `<button data-clear-horror="${escapeHtml(servant.id)}">${t("Dokončit Projev hrůzy", "Complete horror manifestation")}</button>` : ""}</section>`;
 }
 
 function finaleCard(servantId: string) {
@@ -338,13 +338,6 @@ async function runCommand() {
   });
 }
 
-async function escapeCaptivity(id: string) {
-  const servant = state.servants.find((item) => item.id === id);
-  if (!servant?.captured || !canEditServant(role, playerId, servant)) return;
-  if (!await updateState((current) => ({ ...current, servants: current.servants.map((item) => item.id === id ? { ...item, captured: false } : item) }))) return;
-  await publish(() => `${servant.name} ${t("se vymanil ze zajetí.", "escaped captivity.")}`);
-}
-
 async function clearHorror(id: string) {
   const servant = state.servants.find((item) => item.id === id);
   if (!servant?.horrorPending || !canEditServant(role, playerId, servant)) return;
@@ -480,7 +473,6 @@ function bindEvents() {
   document.querySelectorAll<HTMLElement>("[data-remove-acquaintance]").forEach((button) => button.addEventListener("click", () => void deleteAcquaintance(button.dataset.removeAcquaintance!)));
   document.querySelectorAll<HTMLElement>("[data-run-action]").forEach((button) => button.addEventListener("click", () => void runAction(button.dataset.runAction!)));
   document.querySelectorAll<HTMLElement>("[data-open-finale]").forEach((button) => button.addEventListener("click", () => { view = { kind: "finale", servantId: button.dataset.openFinale! }; render(); }));
-  document.querySelectorAll<HTMLElement>("[data-escape]").forEach((button) => button.addEventListener("click", () => void escapeCaptivity(button.dataset.escape!)));
   document.querySelectorAll<HTMLElement>("[data-clear-horror]").forEach((button) => button.addEventListener("click", () => void clearHorror(button.dataset.clearHorror!)));
   document.querySelectorAll<HTMLElement>("[data-run-finale]").forEach((button) => button.addEventListener("click", () => void runFinale(button.dataset.runFinale!)));
 }
