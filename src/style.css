@@ -40,4 +40,11 @@ button:active { transform: translateY(1px); }
 .action-box select, .action-box button { margin: 4px 4px 4px 0; width: calc(50% - 8px); }
 .action-box button { width: auto; }
 .feed p { margin: 6px 0; color: var(--color-text-secondary); white-space: pre-line; }
+.fates { display: grid; gap: 8px; margin-bottom: 14px; }
+.fates .epilogue { padding: 8px; border: 1px solid var(--color-border); border-radius: 6px; }
+.fates .epilogue p { margin: 6px 0 0; }
+.fates .finale-initiator { border-color: var(--color-primary); }
+.fate-stats { color: var(--color-text-secondary); }
+.check { display: flex; align-items: center; gap: 6px; }
+.check input { display: inline; width: auto; margin: 0; }
 @media (max-width: 360px) { .grid { grid-template-columns: 1fr; } #app { padding: 10px; } }

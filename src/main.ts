@@ -17,6 +17,15 @@ let view: { kind: "master" } | { kind: "servant"; id: string } | { kind: "acquai
 type Language = "cs" | "en";
 let language: Language = (localStorage.getItem("mlwm-language") as Language) || (navigator.language.toLowerCase().startsWith("cs") ? "cs" : "en");
 
+const epilogueLabels: Record<EpilogueKind, [string, string]> = {
+  escape: ["uprchne, schová se nebo odejde pryč", "escapes, hides, or leaves"],
+  killed: ["bude zabit", "is killed"],
+  selfDestruct: ["zničí sám sebe", "destroys themselves"],
+  joinVillagers: ["začlení se mezi vesničany", "joins the villagers"],
+  sourceOfFear: ["povstane z popela Finále a stane se zdrojem Strachu", "rises from the ashes of the Finale and becomes a source of Fear"],
+  newMaster: ["najde si nového Pána", "finds a new Master"],
+};
+
 function t(cs: string, en: string) {
   return language === "cs" ? cs : en;
 }
@@ -146,22 +155,15 @@ function actionCard(servant: Servant) {
 
 function finaleCard(servantId: string) {
   const servant = state.servants.find((item) => item.id === servantId)!;
-  const helpers = state.servants.filter((item) => item.id !== servantId).map((item) => `<label class="check"><input type="checkbox" data-finale-helper="${escapeHtml(item.id)}" /> ${escapeHtml(item.name || t("Bezejmenný služebník", "Unnamed servant"))} — ${t("Láska", "Love")} ${totalLove(item)} − ${t("Únava", "Fatigue")} ${item.fatigue}</label>`).join("");
-  return `<section class="card finale"><h2>${t("Finále", "Finale")}</h2><p><strong>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</strong> ${t("se střetává s Pánem.", "faces the Master.")}</p><h3>${t("Pomocníci", "Helpers")}</h3>${helpers || `<p class="muted">${t("Nejsou k dispozici další služebníci.", "No other servants are available.")}</p>`}<label>${t("Bonus Pána", "Master bonus")}<select id="finale-master-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option></select></label><label>${t("Bonus služebníka", "Servant bonus")}<select id="finale-servant-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</option></select></label><button data-run-finale="${escapeHtml(servantId)}">${t("Hodit Finále", "Roll Finale")}</button></section>`;
+  const participants = state.servants.map((item) => `<div class="epilogue ${item.id === servantId ? "finale-initiator" : ""}"><h3>${escapeHtml(item.name || t("Bezejmenný služebník", "Unnamed servant"))}${item.id === servantId ? ` <small>(${t("vyvolal Finále", "triggered the Finale")})</small>` : ""}</h3><p class="fate-stats">${t("Láska", "Love")} ${totalLove(item)} · ${t("Únava", "Fatigue")} ${item.fatigue} · ${t("Sebenenávist", "Self-hatred")} ${item.selfHatred}</p><p><strong>${t("Osud:", "Fate:")}</strong> ${escapeHtml(servantFate(item))}</p></div>`).join("");
+  const helpers = state.servants.filter((item) => item.id !== servantId).map((item) => `<label class="check"><input type="checkbox" data-finale-helper="${escapeHtml(item.id)}" /> ${escapeHtml(item.name || t("Bezejmenný služebník", "Unnamed servant"))}</label>`).join("");
+  return `<section class="card finale"><h2>${t("Finále", "Finale")}</h2><p><strong>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</strong> ${t("se střetává s Pánem.", "faces the Master.")}</p><h3>${t("Osudy po smrti Pána", "Fates after the Master's death")}</h3><p class="muted">${t("Osud se počítá z aktuálních hodnot a může se během hry změnit.", "Fates are calculated from the current values and may change during the game.")}</p><div class="fates">${participants}</div><h3>${t("Pomocníci", "Helpers")}</h3>${helpers || `<p class="muted">${t("Nejsou k dispozici další služebníci.", "No other servants are available.")}</p>`}<label>${t("Bonus Pána", "Master bonus")}<select id="finale-master-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option></select></label><label>${t("Bonus služebníka", "Servant bonus")}<select id="finale-servant-bonus"><option value="none">${t("Bez bonusové kostky", "No bonus die")}</option><option value="intimacy">${t("Intimita", "Intimacy")} (${die(4)})</option><option value="despair">${t("Zoufalství", "Despair")} (${die(6)})</option><option value="honesty">${t("Upřímnost", "Honesty")} (${die(8)})</option></select></label><button data-run-finale="${escapeHtml(servantId)}">${t("Hodit Finále", "Roll Finale")}</button></section>`;
 }
 
 function epilogueCard() {
-  const labels: Record<EpilogueKind, [string, string]> = {
-    escape: ["uprchne, schová se nebo odejde pryč", "escapes, hides, or leaves"],
-    killed: ["bude zabit", "is killed"],
-    selfDestruct: ["zničí sám sebe", "destroys themselves"],
-    joinVillagers: ["začlení se mezi vesničany", "joins the villagers"],
-    sourceOfFear: ["povstane z popela Finále a stane se zdrojem Strachu", "rises from the ashes of the Finale and becomes a source of Fear"],
-    newMaster: ["najde si nového Pána", "finds a new Master"],
-  };
   return `<section class="card finale-results"><h2>${t("Epilogy", "Epilogues")}</h2><p class="muted">${t("Pán zemřel. U každé postavy vyberte jednu z platných možností; při více možnostech rozhoduje hráč.", "The Master is dead. Choose one valid ending for each character; when several apply, the player decides.")}</p>${state.servants.map((servant) => {
     const options = epilogueOptions(servant, state.master.reason);
-    return `<div class="epilogue"><h3>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</h3><small>${t("Sebenenávist", "Self-hatred")} ${servant.selfHatred} · ${t("Únava", "Fatigue")} ${servant.fatigue} · ${t("Láska", "Love")} ${totalLove(servant)}</small><ul>${options.map((option) => `<li>${t(...labels[option])}</li>`).join("")}</ul></div>`;
+    return `<div class="epilogue"><h3>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</h3><small>${t("Sebenenávist", "Self-hatred")} ${servant.selfHatred} · ${t("Únava", "Fatigue")} ${servant.fatigue} · ${t("Láska", "Love")} ${totalLove(servant)}</small><ul>${options.map((option) => `<li>${t(...epilogueLabels[option])}</li>`).join("")}</ul></div>`;
   }).join("")}</section>`;
 }
 
@@ -208,6 +210,11 @@ async function publish(build: () => string) {
 
 function totalLove(servant: Servant) {
   return servant.acquaintances.reduce((sum, link) => sum + link.love, 0);
+}
+
+function servantFate(servant: Servant) {
+  const options = epilogueOptions(servant, state.master.reason);
+  return options.length ? options.map((option) => t(...epilogueLabels[option])).join(language === "cs" ? " nebo " : " or ") : t("zatím není možné určit", "cannot be determined yet");
 }
 
 function bonusSides(bonus: BonusKind) {
