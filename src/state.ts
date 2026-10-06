@@ -10,8 +10,6 @@ export type Servant = {
   lessHuman: string;
   background: string;
   acquaintances: { acquaintanceId: string; love: number; description: string }[];
-  captured?: boolean;
-  horrorPending?: boolean;
 };
 
 export type Acquaintance = { id: string; name: string };
@@ -86,8 +84,6 @@ export function normalizeState(value: Partial<GameState> | undefined): GameState
       lessHuman: text(servant.lessHuman),
       background: text(servant.background),
       acquaintances: completeLinks,
-      captured: servant.captured === true,
-      horrorPending: servant.horrorPending === true,
     };
   }) : [];
   return {
@@ -168,13 +164,11 @@ export function applyActionOutcome(state: GameState, servantId: string, kind: Ac
       if (kind === "approach") return {
         ...servant,
         selfHatred: servant.selfHatred + (won || horror ? 0 : 1),
-        horrorPending: horror || servant.horrorPending,
         acquaintances: servant.acquaintances.map((link) => link.acquaintanceId === acquaintanceId ? { ...link, love: link.love + 1 } : link),
       };
       return {
         ...servant,
         selfHatred: servant.selfHatred + (won && !horror ? 1 : 0),
-        horrorPending: horror || servant.horrorPending,
         fatigue: servant.fatigue + (!won && kind === "violence" ? 1 : 0),
       };
     }),
@@ -184,9 +178,6 @@ export function applyActionOutcome(state: GameState, servantId: string, kind: Ac
       ? { ...servant, selfHatred: servant.selfHatred + (kind === "approach" ? 1 : 0), fatigue: servant.fatigue + (kind === "violence" ? 1 : 0) }
       : servant);
   }
-  result.servants = result.servants.map((servant) => (servant.id === servantId || servant.id === helperId) && servant.fatigue > result.master.reason
-    ? { ...servant, captured: true }
-    : servant);
   return result;
 }
 

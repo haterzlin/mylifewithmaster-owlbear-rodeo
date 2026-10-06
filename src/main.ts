@@ -108,7 +108,6 @@ function servantCard(servant: Servant) {
   return `<article class="servant ${editable ? "" : "readonly"}">
     ${editable ? `<label>${t("Jméno", "Name")}<input class="servant-name" name="name" maxlength="100" value="${escapeHtml(servant.name)}" placeholder="${t("Jméno služebníka", "Servant name")}" /></label>` : `<h3>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</h3>`}
     <label>${t("Pozadí", "Background")}<textarea name="background" maxlength="2000" rows="4" ${editable ? "" : "disabled"}>${escapeHtml(servant.background)}</textarea></label>
-    ${servant.captured ? `<p class="notice">${t("Zajatý", "Captured")}</p>` : ""}${servant.horrorPending ? `<p class="notice">${t("Čeká Projev hrůzy", "Horror manifestation pending")}</p>` : ""}
     <div class="grid">${numberInput(t("Sebenenávist", "Self-hatred"), "selfHatred", servant.selfHatred).replace("<input", `<input ${editable ? "" : "disabled"}`)}${numberInput(t("Únava", "Fatigue"), "fatigue", servant.fatigue).replace("<input", `<input ${editable ? "" : "disabled"}`)}</div>
     <label>${t("Více než lidský", "More than human")}<textarea name="moreHuman" maxlength="2000" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.moreHuman)}</textarea></label>
     <label>${t("Méně než lidský", "Less than human")}<textarea name="lessHuman" maxlength="2000" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.lessHuman)}</textarea></label>
@@ -296,12 +295,16 @@ async function runAction(servantId: string) {
   const won = actorRoll.total > opponentRoll.total;
   const predictedSelfHatred = servant.selfHatred + (won ? 1 : kind === "approach" ? 1 : 0);
   const horror = !tied && predictedSelfHatred > totalLove(servant) + state.master.reason;
+  const previousFatigue = new Map(state.servants.map((item) => [item.id, item.fatigue]));
   const next = await updateState((current) => {
     let updated = applyActionOutcome(current, servantId, kind, targetId, won, horror, helperId, tied);
     return updated;
   });
   if (!next) return;
-  const captured = Boolean(next.servants.find((item) => item.id === servantId)?.captured);
+  const affectedIds = [servantId, helperId].filter((value): value is string => Boolean(value));
+  const capturedNames = next.servants
+    .filter((item) => affectedIds.includes(item.id) && item.fatigue > next.master.reason && (previousFatigue.get(item.id) ?? 0) <= next.master.reason)
+    .map((item) => item.name);
   const translateRule = (rule: string) => ({
     "Strach + Sebenenávist": t("Strach + Sebenenávist", "Fear + Self-hatred"),
     "Rozum": t("Rozum", "Reason"),
@@ -313,11 +316,11 @@ async function runAction(servantId: string) {
     const actorLine = rollLine(`${servant.name} ${t("hází", "rolls")}`, translateRule(actorRule) + (helpDice ? ` + ${t("pomoc", "help")} ${helpDice}${die(4)}` : ""), actorValues + (helpDice ? ` + ${helpDice}` : ""), actorRoll, bonus);
     const opponentLine = rollLine(`${t(opponentName, opponentName === "Vesničané / cizinci" ? "Villagers / strangers" : opponentName)} ${t("hází", "rolls")}`, translateRule(opponentRule), opponentValues, opponentRoll, "none");
     let consequence = tied ? t("remíza, scéna je přerušena", "tie, the scene is interrupted") : won ? t("uspěl", "succeeded") : t("neuspěl", "failed");
-    if (!tied && kind === "approach") consequence += `; ${t("Láska", "Love")} +1` + (won ? "" : `, ${t("Sebenenávist", "Self-hatred")} +1`);
-    else if (!tied && won) consequence += `; ${t("Sebenenávist", "Self-hatred")} +1`;
+    if (!tied && kind === "approach") consequence += `; ${t("Láska", "Love")} +1` + (won || horror ? "" : `, ${t("Sebenenávist", "Self-hatred")} +1`);
+    else if (!tied && won && !horror) consequence += `; ${t("Sebenenávist", "Self-hatred")} +1`;
     else if (!tied && kind === "violence") consequence += `; ${t("Únava", "Fatigue")} +1`;
-    if (horror) consequence += `; ${t("Projev hrůzy místo zvýšení Sebenenávisti", "Horror manifestation instead of increasing Self-hatred")}`;
-    if (captured) consequence += `; ${t("služebník padá do zajetí", "the servant is captured")}`;
+    if (horror) consequence += `; ${t("Sebenenávist se nezvýší, scéna se odehraje jako při jejím zvýšení a v příštím kole hráč vypráví Projev hrůzy místo ovládání služebníka", "Self-hatred does not increase, the scene plays out as if it had increased, and next round the player narrates a Horror manifestation instead of controlling the servant")}`;
+    if (capturedNames.length) consequence += `; ${t(`${capturedNames.join(" a ")} padá do zajetí, protože Únava převýšila Rozum. V následující scéně se bude vymanit ze zajetí`, `${capturedNames.join(" and ")} is captured because Fatigue exceeded Reason. The next scene should be about escaping captivity`)}`;
     const displayTarget = targetName === "vesničanům / cizincům" ? t("vesničanům / cizincům", "villagers / strangers") : targetName;
     const actionText = kind === "approach" ? `${t("Sbližování s", "Approach with")} ${displayTarget}` : `${kind === "violence" ? t("Násilí", "Violence") : t("Zlotřilost", "Villainy")} ${t("proti", "against")} ${displayTarget}`;
     return `**${servant.name} ${t("provádí", "performs")} ${actionText}**\n${actorLine}\n${opponentLine}\n${actorRoll.total} ${tied ? "=" : won ? ">" : "<"} ${opponentRoll.total} -> **${servant.name} ${(consequence + (!tied && helper ? `. ${t("Pomáhá", "Helped by")} ${helper.name}` : "")).replace(/; /g, ". ")}.**`;

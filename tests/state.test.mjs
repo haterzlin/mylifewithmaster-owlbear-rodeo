@@ -137,11 +137,10 @@ test("sblížení vždy zvýší Lásku a při neúspěchu i Sebenenávist", () 
   assert.equal(result.servants[0].selfHatred, servant.selfHatred + 1);
 });
 
-test("Projev hrůzy zabrání zvýšení Sebenenávisti a označí další scénu", () => {
+test("Projev hrůzy zabrání zvýšení Sebenenávisti", () => {
   const state = { ...emptyState, servants: [{ ...servant, selfHatred: 3 }] };
   const result = applyActionOutcome(state, servant.id, "villainy", "npc", true, true);
   assert.equal(result.servants[0].selfHatred, 3);
-  assert.equal(result.servants[0].horrorPending, true);
 });
 
 test("neúspěšné Finále zvýší Únavu, úspěšné ho ukončí", () => {
@@ -177,14 +176,6 @@ test("pomocník při zlotřilosti ani při úspěchu nepřidá nesprávný násl
   const result = applyActionOutcome(state, servant.id, "villainy", "npc", false, false, helper.id);
   assert.equal(result.servants[1].selfHatred, helper.selfHatred);
   assert.equal(result.servants[1].fatigue, helper.fatigue);
-});
-
-test("neúspěšné násilí může uvrhnout pomocníka do zajetí", () => {
-  const helper = { ...servant, id: "helper-1", fatigue: 2 };
-  const state = { ...emptyState, master: { ...emptyState.master, reason: 2 }, servants: [{ ...servant }, helper] };
-  const result = applyActionOutcome(state, servant.id, "violence", "npc", false, false, helper.id);
-  assert.equal(result.servants[1].fatigue, 3);
-  assert.equal(result.servants[1].captured, true);
 });
 
 test("remíza ve Finále nezvýší Únavu a Finále pokračuje", () => {
