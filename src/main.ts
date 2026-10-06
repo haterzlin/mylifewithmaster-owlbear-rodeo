@@ -247,11 +247,11 @@ async function runAction(servantId: string) {
   if (!["none", "intimacy", "despair", "honesty"].includes(bonusValue)) return;
   const bonus = bonusValue as BonusKind;
   const helperId = document.querySelector<HTMLSelectElement>(`[data-action-helper="${safeServantId}"]`)?.value || undefined;
-  if (!target) return;
-  if (kind === "approach" && !target.startsWith("acquaintance:")) {
+  if (kind === "approach" && !target?.startsWith("acquaintance:")) {
     await publish(() => t("Sbližovat se lze jenom se Známostí.", "You can only approach an Acquaintance."));
     return;
   }
+  if (!target) return;
   const targetId = target.split(":")[1];
   let opponent = 1;
   let actorRule = "Strach + Sebenenávist";
@@ -461,6 +461,21 @@ function bindEvents() {
   document.querySelectorAll<HTMLElement>("[data-open-servant]").forEach((button) => button.addEventListener("click", () => { view = { kind: "servant", id: button.dataset.openServant! }; render(); }));
   document.querySelector("#save-master")?.addEventListener("click", () => void saveMaster());
   document.querySelector("#run-command")?.addEventListener("click", () => void runCommand());
+  document.querySelectorAll<HTMLSelectElement>("[data-action-kind]").forEach((action) => {
+    const target = document.querySelector<HTMLSelectElement>(`[data-action-target="${selectorValue(action.dataset.actionKind!)}"]`);
+    if (!target) return;
+    const updateTargets = () => {
+      const approach = action.value === "approach";
+      const valid = [...target.options].filter((option) => option.value.startsWith("acquaintance:"));
+      [...target.options].forEach((option) => {
+        option.hidden = approach && !option.value.startsWith("acquaintance:");
+      });
+      if (approach && !target.value.startsWith("acquaintance:")) target.value = valid[0]?.value || "";
+      if (!approach && !target.value) target.value = "npc";
+    };
+    action.addEventListener("change", updateTargets);
+    updateTargets();
+  });
   document.querySelector<HTMLSelectElement>("#command-target")?.addEventListener("change", (event) => {
     const servant = state.servants.find((item) => item.id === (event.currentTarget as HTMLSelectElement).value);
     const hint = document.querySelector<HTMLElement>("#command-finale-hint");
