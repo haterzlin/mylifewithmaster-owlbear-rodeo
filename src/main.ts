@@ -100,7 +100,7 @@ function commandCard() {
 }
 
 function feedCard() {
-  return `<section class="card feed"><h2>${t("Záznam hry", "Game Log")}</h2>${feed.length ? feed.map((item) => `<p>${escapeHtml(item[language]).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`).join("") : `<p class="muted">${t("Zatím zde nejsou žádné akce.", "No actions yet.")}</p>`}</section>`;
+  return `<section class="card feed"><h2>${t("Záznam hry", "Game Log")}</h2>${feed.length ? feed.map((item) => `<p>${escapeHtml(item[language]).replace(/4̶/g, '<span class="dropped-die">4</span>').replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`).join("") : `<p class="muted">${t("Zatím zde nejsou žádné akce.", "No actions yet.")}</p>`}</section>`;
 }
 
 function servantCard(servant: Servant) {
