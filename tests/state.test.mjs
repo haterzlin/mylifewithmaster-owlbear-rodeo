@@ -29,7 +29,6 @@ test("normalizace doplní výchozí hodnoty a prázdné známosti", () => {
   const state = normalizeState({ servants: [{ ...servant }] });
   assert.deepEqual(state.master, emptyState.master);
   assert.deepEqual(state.servants[0].acquaintances, []);
-  assert.deepEqual(state.acquaintances, []);
 });
 
 test("normalizace odmítne poškozené typy a omezí čísla", () => {
@@ -45,7 +44,6 @@ test("normalizace odmítne poškozené typy a omezí čísla", () => {
   assert.equal(state.servants.length, 1);
   assert.equal(state.servants[0].selfHatred, 100);
   assert.deepEqual(state.servants[0].acquaintances, []);
-  assert.deepEqual(state.acquaintances, []);
 });
 
 test("normalizace doplní Pozadí služebníka", () => {
@@ -64,27 +62,25 @@ test("Lásku může ručně upravovat jen Vypravěč", () => {
   assert.equal(canEditLove("GM"), true);
 });
 
-test("nová známost se uloží všem služebníkům s vlastní Láskou", () => {
+test("nová známost se uloží pouze vybranému služebníkovi", () => {
   const state = { ...emptyState, servants: [{ ...servant }, { ...servant, id: "servant-2", ownerId: "player-2" }] };
-  const acquaintance = { id: "acq-1", name: "Mlynář" };
-  const result = addAcquaintance(state, acquaintance);
-  assert.deepEqual(result.acquaintances, [acquaintance]);
-  assert.deepEqual(result.servants.map((item) => item.acquaintances), [[{ acquaintanceId: "acq-1", love: 0, description: "" }], [{ acquaintanceId: "acq-1", love: 0, description: "" }]]);
+  const result = addAcquaintance(state, servant.id, { id: "acq-1", name: "Mlynář" });
+  assert.deepEqual(result.servants[0].acquaintances, [{ id: "acq-1", name: "Mlynář", love: 0, description: "" }]);
+  assert.deepEqual(result.servants[1].acquaintances, []);
 });
 
-test("normalizace doplní každému služebníkovi všechny známosti", () => {
+test("normalizace zachová pouze vlastní známosti", () => {
   const state = normalizeState({ acquaintances: [{ id: "acq-1", name: "Mlynář" }], servants: [{ ...servant }] });
-  assert.deepEqual(state.servants[0].acquaintances, [{ acquaintanceId: "acq-1", love: 0, description: "" }]);
+  assert.deepEqual(state.servants[0].acquaintances, [{ id: "acq-1", name: "Mlynář", love: 0, description: "" }]);
 });
 
-test("normalizace zachová Lásku a doplní jen chybějící známosti", () => {
+test("normalizace zachová Lásku a nepřidá cizí známosti", () => {
   const state = normalizeState({
     acquaintances: [{ id: "acq-1", name: "Mlynář" }, { id: "acq-2", name: "Kovář" }],
     servants: [{ ...servant, acquaintances: [{ acquaintanceId: "acq-1", love: 3 }] }],
   });
   assert.deepEqual(state.servants[0].acquaintances, [
-    { acquaintanceId: "acq-1", love: 3, description: "" },
-    { acquaintanceId: "acq-2", love: 0, description: "" },
+    { id: "acq-1", name: "Mlynář", love: 3, description: "" },
   ]);
 });
 
@@ -92,22 +88,21 @@ test("stejná známost má u každého služebníka vlastní popis", () => {
   const state = normalizeState({
     acquaintances: [{ id: "acq-1", name: "Mlynář" }],
     servants: [
-      { ...servant, acquaintances: [{ acquaintanceId: "acq-1", love: 1, description: "Připomíná mi otce." }] },
-      { ...servant, id: "servant-2", acquaintances: [{ acquaintanceId: "acq-1", love: 2, description: "Obdivuji její odvahu." }] },
+      { ...servant, acquaintances: [{ id: "acq-1", name: "Mlynář", love: 1, description: "Připomíná mi otce." }] },
+      { ...servant, id: "servant-2", acquaintances: [{ id: "acq-1", name: "Mlynář", love: 2, description: "Obdivuji její odvahu." }] },
     ],
   });
   assert.equal(state.servants[0].acquaintances[0].description, "Připomíná mi otce.");
   assert.equal(state.servants[1].acquaintances[0].description, "Obdivuji její odvahu.");
 });
 
-test("odstranění známosti smaže záznam i vazby všech služebníků", () => {
-  const state = { ...emptyState, acquaintances: [{ id: "acq-1", name: "Mlynář" }], servants: [
-    { ...servant, acquaintances: [{ acquaintanceId: "acq-1", love: 2 }] },
-    { ...servant, id: "servant-2", acquaintances: [{ acquaintanceId: "acq-1", love: 1 }] },
+test("odstranění známosti smaže pouze záznam vybraného služebníka", () => {
+  const state = { ...emptyState, servants: [
+    { ...servant, acquaintances: [{ id: "acq-1", name: "Mlynář", love: 2, description: "" }] },
+    { ...servant, id: "servant-2", acquaintances: [{ id: "acq-1", name: "Mlynář", love: 1, description: "" }] },
   ] };
-  const result = removeAcquaintance(state, "acq-1");
-  assert.deepEqual(result.acquaintances, []);
-  assert.deepEqual(result.servants.map((item) => item.acquaintances), [[], []]);
+  const result = removeAcquaintance(state, servant.id, "acq-1");
+  assert.deepEqual(result.servants.map((item) => item.acquaintances), [[], [{ id: "acq-1", name: "Mlynář", love: 1, description: "" }]]);
 });
 
 test("hod k4 ignoruje čtyřky a nikdy nevytvoří prázdnou hromádku", () => {
@@ -131,7 +126,7 @@ test("neúspěšné násilí zvýší Únavu o jedna", () => {
 });
 
 test("sblížení vždy zvýší Lásku a při neúspěchu i Sebenenávist", () => {
-  const state = { ...emptyState, servants: [{ ...servant, acquaintances: [{ acquaintanceId: "acq-1", love: 0 }] }] };
+  const state = { ...emptyState, servants: [{ ...servant, acquaintances: [{ id: "acq-1", name: "Mlynář", love: 0, description: "" }] }] };
   const result = applyActionOutcome(state, servant.id, "approach", "acq-1", false);
   assert.equal(result.servants[0].acquaintances[0].love, 1);
   assert.equal(result.servants[0].selfHatred, servant.selfHatred + 1);
@@ -152,7 +147,7 @@ test("neúspěšné Finále zvýší Únavu, úspěšné ho ukončí", () => {
 });
 
 test("Epilog vrátí všechny platné možnosti podle konečných statistik", () => {
-  assert.deepEqual(epilogueOptions({ ...servant, selfHatred: 2, fatigue: 1, acquaintances: [{ acquaintanceId: "a", love: 4 }] }, 2), ["joinVillagers"]);
+  assert.deepEqual(epilogueOptions({ ...servant, selfHatred: 2, fatigue: 1, acquaintances: [{ id: "a", name: "A", love: 4, description: "" }] }, 2), ["joinVillagers"]);
   assert.deepEqual(epilogueOptions({ ...servant, selfHatred: 5, fatigue: 2, acquaintances: [] }, 2), ["killed", "selfDestruct", "sourceOfFear"]);
 });
 

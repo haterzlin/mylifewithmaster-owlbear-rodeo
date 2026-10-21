@@ -9,16 +9,13 @@ export type Servant = {
   moreHuman: string;
   lessHuman: string;
   background: string;
-  acquaintances: { acquaintanceId: string; love: number; description: string }[];
+  acquaintances: { id: string; name: string; love: number; description: string }[];
 };
-
-export type Acquaintance = { id: string; name: string };
 
 export type GameState = {
   master: { name: string; description: string; reason: number; fear: number };
   environment: string;
   servants: Servant[];
-  acquaintances: Acquaintance[];
   finaleServantId?: string;
 };
 
@@ -31,7 +28,6 @@ export const emptyState: GameState = {
   master: { name: "", description: "", reason: 0, fear: 0 },
   environment: "",
   servants: [],
-  acquaintances: [],
 };
 
 const MAX_NUMBER = 100;
@@ -57,7 +53,7 @@ function id(value: unknown, fallback: string) {
 export function normalizeState(value: Partial<GameState> | undefined): GameState {
   const source = record(value);
   const master = record(source.master);
-  const acquaintances = Array.isArray(source.acquaintances) ? source.acquaintances.filter((item) => Object.values(record(item)).length > 0).map((item, index) => {
+  const oldAcquaintances = Array.isArray(source.acquaintances) ? source.acquaintances.filter((item) => Object.values(record(item)).length > 0).map((item, index) => {
     const acquaintance = record(item);
     return {
       id: id(acquaintance.id, `acquaintance-${index}`),
@@ -66,14 +62,17 @@ export function normalizeState(value: Partial<GameState> | undefined): GameState
   }) : [];
   const servants = Array.isArray(source.servants) ? source.servants.filter((item) => Object.values(record(item)).length > 0).map((item, index) => {
     const servant = record(item);
-    const links = Array.isArray(servant.acquaintances) ? servant.acquaintances.filter((link) => Object.values(record(link)).length > 0).map((link) => {
+    const links = Array.isArray(servant.acquaintances) ? servant.acquaintances.filter((link) => Object.values(record(link)).length > 0).map((link, linkIndex) => {
       const acquaintance = record(link);
-      return { acquaintanceId: id(acquaintance.acquaintanceId, ""), love: number(acquaintance.love), description: text(acquaintance.description) };
-    }).filter((link) => link.acquaintanceId) : [];
-    const knownIds = new Set(links.map((link) => link.acquaintanceId));
-    const completeLinks = [...links, ...acquaintances
-      .filter((item) => !knownIds.has(item.id))
-      .map((item) => ({ acquaintanceId: item.id, love: 0, description: "" }))];
+      const legacy = oldAcquaintances.find((item) => item.id === id(acquaintance.acquaintanceId, ""));
+      return {
+        id: id(acquaintance.id, legacy?.id || `acquaintance-${index}-${linkIndex}`),
+        name: text(acquaintance.name, legacy?.name || ""),
+        love: number(acquaintance.love),
+        description: text(acquaintance.description),
+      };
+    }).filter((link) => link.name) : [];
+    const migratedLinks = links.length ? links : oldAcquaintances.map((item) => ({ ...item, love: 0, description: "" }));
     return {
       id: id(servant.id, `servant-${index}`),
       name: text(servant.name),
@@ -83,7 +82,7 @@ export function normalizeState(value: Partial<GameState> | undefined): GameState
       moreHuman: text(servant.moreHuman),
       lessHuman: text(servant.lessHuman),
       background: text(servant.background),
-      acquaintances: completeLinks,
+      acquaintances: migratedLinks,
     };
   }) : [];
   return {
@@ -95,7 +94,6 @@ export function normalizeState(value: Partial<GameState> | undefined): GameState
     },
     environment: text(source.environment),
     servants,
-    acquaintances,
     finaleServantId: typeof source.finaleServantId === "string" ? source.finaleServantId.slice(0, 100) : undefined,
   };
 }
@@ -108,24 +106,22 @@ export function canEditLove(role: Role) {
   return role === "GM";
 }
 
-export function addAcquaintance(state: GameState, acquaintance: Acquaintance): GameState {
+export function addAcquaintance(state: GameState, servantId: string, acquaintance: { id: string; name: string }): GameState {
   return {
     ...structuredClone(state),
-    acquaintances: [...state.acquaintances, acquaintance],
-    servants: state.servants.map((servant) => ({
+    servants: state.servants.map((servant) => servant.id !== servantId ? servant : ({
       ...servant,
-      acquaintances: [...servant.acquaintances, { acquaintanceId: acquaintance.id, love: 0, description: "" }],
+      acquaintances: [...servant.acquaintances, { ...acquaintance, love: 0, description: "" }],
     })),
   };
 }
 
-export function removeAcquaintance(state: GameState, acquaintanceId: string): GameState {
+export function removeAcquaintance(state: GameState, servantId: string, acquaintanceId: string): GameState {
   return {
     ...structuredClone(state),
-    acquaintances: state.acquaintances.filter((item) => item.id !== acquaintanceId),
     servants: state.servants.map((servant) => ({
       ...servant,
-      acquaintances: servant.acquaintances.filter((link) => link.acquaintanceId !== acquaintanceId),
+      acquaintances: servant.id === servantId ? servant.acquaintances.filter((link) => link.id !== acquaintanceId) : servant.acquaintances,
     })),
   };
 }
@@ -164,7 +160,7 @@ export function applyActionOutcome(state: GameState, servantId: string, kind: Ac
       if (kind === "approach") return {
         ...servant,
         selfHatred: servant.selfHatred + (won || horror ? 0 : 1),
-        acquaintances: servant.acquaintances.map((link) => link.acquaintanceId === acquaintanceId ? { ...link, love: link.love + 1 } : link),
+        acquaintances: servant.acquaintances.map((link) => link.id === acquaintanceId ? { ...link, love: link.love + 1 } : link),
       };
       return {
         ...servant,
