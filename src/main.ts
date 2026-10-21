@@ -1,6 +1,6 @@
 import OBR from "@owlbear-rodeo/sdk";
 import "./style.css";
-import { addAcquaintance, applyActionOutcome, applyFinaleOutcome, canEditLove, canEditServant, emptyState, epilogueOptions, normalizeState, poolSize, removeAcquaintance as removeAcquaintanceState, rollDice } from "./state";
+import { addAcquaintance, applyActionOutcome, applyFinaleOutcome, canEditLove, canEditServant, emptyState, epilogueOptions, normalizeState, poolSize, removeAcquaintance as removeAcquaintanceState, rollDice, validStartingStats } from "./state";
 import type { ActionKind, BonusKind, EpilogueKind, GameState, Servant } from "./state";
 
 const KEY = "com.mujzivotspanem/state";
@@ -13,7 +13,7 @@ let playerId = "local";
 type FeedEntry = { cs: string; en: string };
 let feed: FeedEntry[] = [];
 let finaleCompleted = false;
-let view: { kind: "master" } | { kind: "servant"; id: string } | { kind: "acquaintance"; servantId: string; acquaintanceId?: string } | { kind: "finale"; servantId: string } | null = null;
+let view: { kind: "master" } | { kind: "servant"; id: string } | { kind: "acquaintance"; servantId: string; acquaintanceId?: string } | { kind: "finale"; servantId: string } | { kind: "create-servant" } | null = null;
 type Language = "cs" | "en";
 let language: Language = (localStorage.getItem("mlwm-language") as Language) || (navigator.language.toLowerCase().startsWith("cs") ? "cs" : "en");
 
@@ -77,6 +77,7 @@ function render() {
   if (view.kind === "master") app.innerHTML = `${header}${masterCard()}${feedCard()}`;
   else if (view.kind === "servant") app.innerHTML = `${header}${servantCard(state.servants.find((servant) => servant.id === viewingServantId)!)}${feedCard()}`;
   else if (view.kind === "acquaintance") app.innerHTML = `${header}${acquaintanceForm(view.servantId, view.acquaintanceId)}${feedCard()}`;
+  else if (view.kind === "create-servant") app.innerHTML = `${header}${servantCreationCard()}${feedCard()}`;
   else app.innerHTML = `${header}${finaleCard(view.servantId)}${feedCard()}`;
   bindEvents();
 }
@@ -105,14 +106,28 @@ function feedCard() {
 
 function servantCard(servant: Servant) {
   const editable = role === "GM" || servant.ownerId === playerId;
+  const statsEditable = role === "GM";
+  const stats = statsEditable
+    ? `${numberInput(t("Sebenenávist", "Self-hatred"), "selfHatred", servant.selfHatred)}${numberInput(t("Únava", "Fatigue"), "fatigue", servant.fatigue)}`
+    : `<label>${t("Sebenenávist", "Self-hatred")} <output>${servant.selfHatred}</output></label><label>${t("Únava", "Fatigue")} <output>${servant.fatigue}</output></label>`;
   return `<article class="servant ${editable ? "" : "readonly"}">
     ${editable ? `<label>${t("Jméno", "Name")}<input class="servant-name" name="name" maxlength="100" value="${escapeHtml(servant.name)}" placeholder="${t("Jméno služebníka", "Servant name")}" /></label>` : `<h3>${escapeHtml(servant.name || t("Bezejmenný služebník", "Unnamed servant"))}</h3>`}
     <label>${t("Pozadí", "Background")}<textarea name="background" maxlength="2000" rows="4" ${editable ? "" : "disabled"}>${escapeHtml(servant.background)}</textarea></label>
-    <div class="grid">${numberInput(t("Sebenenávist", "Self-hatred"), "selfHatred", servant.selfHatred).replace("<input", `<input ${editable ? "" : "disabled"}`)}${numberInput(t("Únava", "Fatigue"), "fatigue", servant.fatigue).replace("<input", `<input ${editable ? "" : "disabled"}`)}</div>
+    <div class="grid">${stats}</div>
     <label>${t("Více než lidský", "More than human")}<textarea name="moreHuman" maxlength="2000" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.moreHuman)}</textarea></label>
     <label>${t("Méně než lidský", "Less than human")}<textarea name="lessHuman" maxlength="2000" rows="2" ${editable ? "" : "disabled"}>${escapeHtml(servant.lessHuman)}</textarea></label>
     ${editable ? `<button data-save-servant="${escapeHtml(servant.id)}">${t("Uložit služebníka", "Save servant")}</button>` : `<small class="muted">${t("Postava jiného hráče", "Another player's character")}</small>`}
   </article>${acquaintanceCard(servant)}${editable ? actionCard(servant) : ""}`;
+}
+
+function servantCreationCard() {
+  return `<section class="card"><h2>${t("Vytvořit služebníka", "Create servant")}</h2>
+    <label>${t("Jméno", "Name")}<input id="new-servant-name" maxlength="100" value="Nový služebník" /></label>
+    <div class="grid"><label>${t("Sebenenávist", "Self-hatred")}<input id="new-self-hatred" type="number" min="0" max="3" step="1" value="2" /></label><label>${t("Únava", "Fatigue")}<input id="new-fatigue" type="number" min="0" max="3" step="1" value="1" /></label></div>
+    <p class="muted">${t("Rozděl mezi Sebenenávist a Únavu přesně 3 body.", "Distribute exactly 3 points between Self-hatred and Fatigue.")}</p>
+    <p id="new-servant-error" class="muted"></p>
+    <button id="save-new-servant">${t("Vytvořit služebníka", "Create servant")}</button>
+  </section>`;
 }
 
 function acquaintanceCard(servant: Servant) {
@@ -386,12 +401,14 @@ async function saveMaster() {
 async function saveServant(id: string) {
   if (!document.querySelector(`[data-save-servant="${selectorValue(id)}"]`)) return;
   const servant = state.servants.find((item) => item.id === id);
-  if (!servant || !canEditServant(role, playerId, servant)) return;
+  const currentRole = await OBR.player.getRole();
+  if (!servant || !canEditServant(currentRole, playerId, servant)) return;
   const value = (name: string) => document.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${selectorValue(name)}"]`)?.value.trim() ?? "";
   const next = {
     name: value("name"), background: value("background"), moreHuman: value("moreHuman"), lessHuman: value("lessHuman"),
-    selfHatred: inputNumber(value("selfHatred")), fatigue: inputNumber(value("fatigue")),
-    acquaintances: servant.acquaintances.map((link) => ({ ...link, love: canEditLove(role) ? inputNumber(document.querySelector<HTMLInputElement>(`[data-love="${selectorValue(id)}"][data-acquaintance="${selectorValue(link.id)}"]`)?.value ?? "") : link.love })),
+    selfHatred: currentRole === "GM" ? inputNumber(value("selfHatred")) : servant.selfHatred,
+    fatigue: currentRole === "GM" ? inputNumber(value("fatigue")) : servant.fatigue,
+    acquaintances: servant.acquaintances.map((link) => ({ ...link, love: canEditLove(currentRole) ? inputNumber(document.querySelector<HTMLInputElement>(`[data-love="${selectorValue(id)}"][data-acquaintance="${selectorValue(link.id)}"]`)?.value ?? "") : link.love })),
   };
   if (!await updateState((current) => ({
     ...current,
@@ -440,9 +457,16 @@ async function deleteAcquaintance(servantId: string, id: string) {
 
 async function createServant() {
   if (state.servants.some((servant) => servant.ownerId === playerId) && role !== "GM") return;
+  const selfHatred = Number(formValue("#new-self-hatred"));
+  const fatigue = Number(formValue("#new-fatigue"));
+  const error = document.querySelector<HTMLElement>("#new-servant-error");
+  if (!validStartingStats(selfHatred, fatigue)) {
+    if (error) error.textContent = t("Sebenenávist a Únava musí dohromady tvořit přesně 3 celé body.", "Self-hatred and Fatigue must total exactly 3 whole points.");
+    return;
+  }
   await updateState((current) => ({ ...current, servants: [...current.servants, {
-    id: crypto.randomUUID(), name: "Nový služebník", ownerId: playerId,
-    selfHatred: 2, fatigue: 1, moreHuman: "", lessHuman: "", background: "",
+    id: crypto.randomUUID(), name: formValue("#new-servant-name") || "Nový služebník", ownerId: playerId,
+    selfHatred, fatigue, moreHuman: "", lessHuman: "", background: "",
     acquaintances: [],
   }] }));
 }
@@ -477,8 +501,9 @@ function bindEvents() {
   document.querySelector("#new-servant")?.addEventListener("click", () => {
     const own = state.servants.find((servant) => servant.ownerId === playerId);
     if (own) { view = { kind: "servant", id: own.id }; render(); }
-    else void createServant();
+    else { view = { kind: "create-servant" }; render(); }
   });
+  document.querySelector("#save-new-servant")?.addEventListener("click", () => void createServant());
   document.querySelector<HTMLButtonElement>("#save-acquaintance")?.addEventListener("click", (event) => {
     const element = event.currentTarget as HTMLElement;
     void saveAcquaintance(element.dataset.servantId!, element.dataset.acquaintanceId || undefined);

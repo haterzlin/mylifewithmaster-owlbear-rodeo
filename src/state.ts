@@ -106,6 +106,11 @@ export function canEditLove(role: Role) {
   return role === "GM";
 }
 
+export function validStartingStats(selfHatred: number, fatigue: number) {
+  return Number.isInteger(selfHatred) && Number.isInteger(fatigue)
+    && selfHatred >= 0 && fatigue >= 0 && selfHatred + fatigue === 3;
+}
+
 export function addAcquaintance(state: GameState, servantId: string, acquaintance: { id: string; name: string }): GameState {
   return {
     ...structuredClone(state),

@@ -12,6 +12,7 @@ import {
   poolSize,
   removeAcquaintance,
   rollDice,
+  validStartingStats,
 } from "../src/state.ts";
 
 const servant = {
@@ -60,6 +61,13 @@ test("hráč upravuje jen vlastního služebníka, Vypravěč všechny", () => {
 test("Lásku může ručně upravovat jen Vypravěč", () => {
   assert.equal(canEditLove("PLAYER"), false);
   assert.equal(canEditLove("GM"), true);
+});
+
+test("počáteční body musí být přesně tři celé nezáporné body", () => {
+  assert.equal(validStartingStats(2, 1), true);
+  assert.equal(validStartingStats(3, 0), true);
+  assert.equal(validStartingStats(1.5, 1.5), false);
+  assert.equal(validStartingStats(2, 2), false);
 });
 
 test("nová známost se uloží pouze vybranému služebníkovi", () => {
